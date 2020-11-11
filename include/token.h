@@ -17,6 +17,7 @@ struct Token
 };
 
 
+
 enum class TokenCat : uint16_t
 {
 	NULLCAT = 0,
@@ -24,7 +25,8 @@ enum class TokenCat : uint16_t
 	Immediate,
 	Symbol,
 	Operator,
-	EOF,
+	FileEnd, //stdio.h defines EOF sometimes
+	BuiltIn, //any @blah function
 };
 
 enum class TokenType : uint16_t

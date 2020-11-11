@@ -11,7 +11,7 @@
 
 inline bool is_alpha(const char);
 inline bool is_numeric(const char);
-inline bool is_identifier_valid(const char);
+inline bool is_symbol_valid(const char);
 
 
 
@@ -34,8 +34,22 @@ Lexer::read_next()
 		m_reached_end = true;
 
 	//todo: could ftell be negative?
-	m_current_offset = (uint32_t)ftell(m_fd);	
+	m_current_fd_offset = (uint32_t)ftell(m_fd);	
 	m_current_pointer = m_input_buffer;
+}
+
+//this function introduces overhead by using fread, but I didn't want to overcomplicate
+// the code for the peek function, so this was the most eloquent solution.
+char
+Lexer::peek()
+{
+	char x = 0;
+	
+	fseek(m_fd, m_current_offset, 0);
+	fread(&x, sizeof(x), 1, m_fd);
+	fseek(m_fd, m_current_fd_offset, 0);
+
+	return x;
 }
 
 
@@ -50,7 +64,7 @@ Lexer::init_lexer(const char* path)
 	if(m_input_buffer == nullptr)
 		Error::strf_error(ErrorType::Fatal, "Failed to allocate %X bytes of memory!", m_input_buffer_size);
 
-	m_current_pointer = m_input_buffer;
+	m_current_pointer = m_input_buffer + m_input_buffer_size; //primes fetch_char to request read_next
 
 }
 
@@ -75,7 +89,7 @@ Lexer::fetch_char()
 	m_current_pointer++;
 	
 	if(val == '\n')
-		m_current_line++;
+		m_current_line++; //todo: line number counting broken
 	m_current_column++;
 	m_current_offset++;
 
@@ -86,27 +100,64 @@ Lexer::fetch_char()
 void
 Lexer::fetch_token(Token* tok)
 {
-	//memset(tok, 0, sizeof(*tok));
+	tok->m_type = TokenType::NULLTYPE;
+	tok->m_cat =  TokenCat::NULLCAT;
+	tok->m_str.clear();
 
 	char c = fetch_char();
+	
+	if(c == '/' && peek() == '/')
+	{
+		while(c != '\n')
+		{
+			if((c = fetch_char()) == '\0')
+			{
+				tok->m_cat = TokenCat::FileEnd;
+				return;
+			}
+		}
+
+		c = fetch_char();
+	}
+
+	if(c == '/' && peek() == '*')
+	{
+		while(!(c == '*' && peek() == '/'))
+		{
+			if((c = fetch_char()) == '\0')
+			{
+				tok->m_cat = TokenCat::FileEnd;
+				return;
+			}
+		}
+
+		c = fetch_char();
+	}
+
 	if(c == '\0')
 	{
-		tok->m_cat = TokenCat::EOF;
+		tok->m_cat = TokenCat::FileEnd;
 		return;
 	}
 
-	if(is_identifier_valid(c) && !is_numeric(c)) //cannot begin identifier with number
+
+
+	if(is_symbol_valid(c) && !is_numeric(c)) //cannot begin symbol with number
 	{
 		tok->m_line_num = m_current_line;
 		tok->m_col_num = m_current_column;
 		tok->m_foffset = m_current_offset;
-
-		while(is_identifier_valid(c))
-			tok->m_str.push_back(c);
+		tok->m_cat = TokenCat::Symbol; 
 		
-		for(uint16_t i = TokenType::INT8; i != TokenType::DECL_EQUAL; i++)
+		while(is_symbol_valid(c))
 		{
-			if(strcmp(tok_enum_to_string[i], tok->m_str.c_str()))
+			tok->m_str.push_back(c);
+			c = fetch_char();
+		}
+		
+		for(uint16_t i = (uint16_t)TokenType::INT8; i != (uint16_t)TokenType::DECL_EQUAL; i++)
+		{
+			if(strcmp(tok_enum_to_string[i], tok->m_str.c_str()) == 0)
 			{
 				tok->m_cat = TokenCat::Keyword;
 				tok->m_type = (TokenType)i;
@@ -116,8 +167,54 @@ Lexer::fetch_token(Token* tok)
 	}
 	else if(is_numeric(c))
 	{
+		char prev = c;
+		c = fetch_char();
+		
+		if(prev == '0' && c == 'x')
+		{
+			fetch_char();
+			while(is_numeric(c) || c == 'A' || c == 'B' || c == 'C' || c == 'D' || c == 'E' || c == 'F'
+				|| c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'e' || c == 'f')
+			{
+				tok->m_str.push_back(c);
+				c = fetch_char();
+			}
 
+			tok->m_type = TokenType::UINT64;
+		}
+		else
+		{
+			tok->m_str.push_back(prev);
+			while(is_numeric(c))
+			{
+				tok->m_str.push_back(c);
+				c = fetch_char();
+			}
+
+			//todo: determine if it actually fits, if not make UINT64, or raise error!
+			tok->m_type = TokenType::INT64;
+		}
+
+		tok->m_cat = TokenCat::Immediate;
+		
 	}
+
+	if(c == '@')
+	{
+		tok->m_cat = TokenCat::BuiltIn;
+		c = fetch_char();
+
+		while(is_symbol_valid(c) && !is_numeric(c))
+		{
+			tok->m_str.push_back(c);
+			c = fetch_char();
+		}
+
+		if(tok->m_str.size() == 0)
+			Error::strf_error(ErrorType::Error, "Line:%u Invalid character after @: '%c'",  tok->m_line_num, c);
+	}
+
+
 
 
 
@@ -137,7 +234,7 @@ is_numeric(const char x)
 }
 
 inline bool 
-is_identifier_valid(const char x)
+is_symbol_valid(const char x)
 {
 	return is_numeric(x) || is_alpha(x) || x == '_';
 }

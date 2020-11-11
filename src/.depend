@@ -1,8 +1,7 @@
 main.o: main.cpp ../include/lexer.h ../include/token.h
-lexer.o: lexer.cpp ../include/lexer.h ../include/token.h \
-  ../include/error.h
-parser.o: parser.cpp ../include/parser.h ../include/lexer.h \
+lexer.o: lexer.cpp ../include/lexer.h ../include/error.h \
   ../include/token.h
+parser.o: parser.cpp ../include/parser.h ../include/lexer.h
 semantic.o: semantic.cpp ../include/semantic.h
 optimizer.o: optimizer.cpp ../include/optimizer.h
 codegen.o: codegen.cpp ../include/codegen.h

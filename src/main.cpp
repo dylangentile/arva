@@ -29,8 +29,14 @@ main(int argc, const char* argv[])
 	the_lexer.init_lexer(argv[1]);
 
 	Token x;
-	the_lexer.fetch_token(&x);
 
+	do
+	{
+		the_lexer.fetch_token(&x);
+		printf("%s\n", x.m_str.c_str());
+	} while(x.m_cat != TokenCat::FileEnd);
+
+	
 
 	return 0;
 }
