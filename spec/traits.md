@@ -6,6 +6,7 @@ The `const` key word wraps the entire type after it, and adds the `constant` key
 
 
 ## All of the traits
+Note that some traits cannot be implemented, such as the `arithmetic` trait. That is because the language does not support general operator overloading.
 
 ### `copyable`
 
@@ -38,6 +39,8 @@ Is this type's data be not modifiable or "constant"?
 ### `hashable`
 Does this type support hashing other than raw byte hashing?
 
+### `executable`
+Can this type be executed?
 
 
 ### Trait Compositions

@@ -1,0 +1,49 @@
+std := @import("std");
+print := std.io.print;
+
+
+main := (string[] args -> i32)
+{
+	print("Hello World!\n");
+	return 0;
+}
+
+
+/*
+
+
+traits := @import("compile_constant").traits;
+
+std := namespace
+{
+
+};
+
+multiply := (i32 x, i32 y -> i32)
+{
+	return x * y;
+}
+
+
+data := struct
+{
+	i32 a;
+	i32 b;
+}
+
+hash_map := class<T implements traits.hashable && traits.comparable> hash_map
+{
+ 	copy(hash_map* other)
+ 	{
+ 		//code
+ 	}
+
+ 	
+};
+
+
+
+
+
+
+*/
