@@ -1,7 +1,8 @@
 #include <cstdio>
 #include "lexer.h"
-
 #include "token.h"
+#include "symbol.h"
+#include "error.h"
 /*
 
 const char* useable_flags[] = {
@@ -24,6 +25,8 @@ main(int argc, const char* argv[])
 		fprintf(stderr, "Usage: %s source.arva\n", argv[0]);
 		return 1;
 	}
+	Error::init();
+	SymbolTable::init();
 
 	Lexer the_lexer;
 	the_lexer.init_lexer(argv[1]);
@@ -33,10 +36,14 @@ main(int argc, const char* argv[])
 	do
 	{
 		the_lexer.fetch_token(&x);
-		printf("%s\n", x.m_str.c_str());
+		printf("%u: %s\n", x.m_line_num, x.m_str.c_str());
 	} while(x.m_cat != TokenCat::FileEnd);
 
 	
+	Error::report();
+
+	SymbolTable::destroy();
+	Error::destroy();
 
 	return 0;
 }

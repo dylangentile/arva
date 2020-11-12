@@ -1,7 +1,6 @@
+#define ARVA_INCLUDE_ENUM_STR_CRAP //must be first line
 #include "lexer.h"
 #include "error.h"
-
-#define ARVA_INCLUDE_ENUM_STR_CRAP
 #include "token.h"
 
 #include <cstdio>
@@ -12,12 +11,50 @@
 inline bool is_alpha(const char);
 inline bool is_numeric(const char);
 inline bool is_symbol_valid(const char);
+inline bool is_whitespace(const char);
 
 
 
 Lexer::Lexer(){}
 Lexer::~Lexer(){}
 
+
+//this is probably the worst written code in this file.
+// my apologies but for error printing this will probably get replaced in the future anyway
+void
+token_error(ErrorType type, Token* tok, const char* msg, ...)
+{
+
+	va_list args1, args2;
+	va_start(args1, msg);
+	va_copy(args2, args1);
+
+	size_t s = vsnprintf(nullptr, 0, msg, args1) + 1; //include null terminator
+	char* buf = (char*)calloc(s, sizeof(char));
+	vsnprintf(buf, s, msg, args2);
+	
+	va_end(args2);
+
+	const char* fmt_str = "\033[1m%s:%u:\033[91m %s\033[0m\n\t\t%s\n\t\t";
+
+	s = snprintf(nullptr, 0, fmt_str, 
+		tok->m_file_path, tok->m_line_num, (const char*)buf, tok->m_str.c_str()) + 1;
+	char* final_msg = (char*)calloc(s + tok->m_str.size() + 1, sizeof(char));
+	snprintf(final_msg, s, fmt_str, 
+		tok->m_file_path, tok->m_line_num, (const char*)buf, tok->m_str.c_str());
+	s--;
+	final_msg[s] = '^';
+	for(size_t i = 1; i < tok->m_str.size(); i++)
+		final_msg[s + i] = '~';
+	final_msg[s + tok->m_str.size()] = '\n';
+	final_msg[s + tok->m_str.size() + 1] = '\0';
+	
+	Error::strf_error(type, (const char*)final_msg);
+	
+	free(final_msg);
+	free(buf);
+
+}
 
 void
 Lexer::read_next()
@@ -66,6 +103,8 @@ Lexer::init_lexer(const char* path)
 
 	m_current_pointer = m_input_buffer + m_input_buffer_size; //primes fetch_char to request read_next
 
+	m_file_path = path;
+	prev_char = fetch_char();
 }
 
 void
@@ -96,16 +135,27 @@ Lexer::fetch_char()
 	return val;
 }
 
+void
+Lexer::skip_whitespace(char* c)
+{
+	while(is_whitespace(*c))
+	{
+		*c = fetch_char();
+	}
+}
 
 void
 Lexer::fetch_token(Token* tok)
 {
 	tok->m_type = TokenType::NULLTYPE;
 	tok->m_cat =  TokenCat::NULLCAT;
+	tok->m_file_path = this->m_file_path;
 	tok->m_str.clear();
 
-	char c = fetch_char();
+	char c = prev_char;
 	
+	skip_whitespace(&c);
+
 	if(c == '/' && peek() == '/')
 	{
 		while(c != '\n')
@@ -126,13 +176,17 @@ Lexer::fetch_token(Token* tok)
 		{
 			if((c = fetch_char()) == '\0')
 			{
+				Error::strf_error(ErrorType::Error, "Unterminated comment at EOF!");
 				tok->m_cat = TokenCat::FileEnd;
 				return;
 			}
 		}
 
 		c = fetch_char();
+		c = fetch_char(); //for prev_char
 	}
+
+	skip_whitespace(&c);
 
 	if(c == '\0')
 	{
@@ -141,12 +195,16 @@ Lexer::fetch_token(Token* tok)
 	}
 
 
+	tok->m_line_num = m_current_line;
+	tok->m_col_num = m_current_column;
+	tok->m_foffset = m_current_offset;
+
+
+	
+
 
 	if(is_symbol_valid(c) && !is_numeric(c)) //cannot begin symbol with number
 	{
-		tok->m_line_num = m_current_line;
-		tok->m_col_num = m_current_column;
-		tok->m_foffset = m_current_offset;
 		tok->m_cat = TokenCat::Symbol; 
 		
 		while(is_symbol_valid(c))
@@ -161,6 +219,7 @@ Lexer::fetch_token(Token* tok)
 			{
 				tok->m_cat = TokenCat::Keyword;
 				tok->m_type = (TokenType)i;
+				break;
 			}
 		}
 
@@ -198,8 +257,7 @@ Lexer::fetch_token(Token* tok)
 		tok->m_cat = TokenCat::Immediate;
 		
 	}
-
-	if(c == '@')
+	else if(c == '@')
 	{
 		tok->m_cat = TokenCat::BuiltIn;
 		c = fetch_char();
@@ -213,9 +271,69 @@ Lexer::fetch_token(Token* tok)
 		if(tok->m_str.size() == 0)
 			Error::strf_error(ErrorType::Error, "Line:%u Invalid character after @: '%c'",  tok->m_line_num, c);
 	}
+	else if(c == '\"')
+	{
+		c = fetch_char();
+		while(c != '\"')
+		{
+			tok->m_str.push_back(c);
+			if((c = fetch_char()) == '\0')
+			{
+				token_error(ErrorType::Fatal, tok, "Readed EOF before end of terminating quote!");
+			}
+		}
+
+		c = fetch_char(); //for prev_char to be set properly
+		//todo: implement escape parsing "\n \t \0" etc.
+	}
+	else
+	{
+		
+		tok->m_str.push_back(c);
+		tok->m_str.push_back(peek());
+		for(uint16_t i = (uint16_t)TokenType::DECL_EQUAL; i != (uint16_t)TokenType::ARROW + 1; i++)
+		{
+			if(strcmp((const char*)tok->m_str.c_str(), tok_enum_to_string[i]) == 0)
+			{
+				tok->m_type = (TokenType)i;
+				tok->m_cat = TokenCat::Operator;
+
+				fetch_char(); //peek
+				c = fetch_char(); //for prev_char
+				break;
+			}
+		}
+
+		if(tok->m_type == TokenType::NULLTYPE)
+		{
+			tok->m_str.clear();
+			tok->m_str.push_back(c);
+			for(uint16_t i = (uint16_t)TokenType::DECL_EQUAL; i != (uint16_t)TokenType::ARROW + 1; i++)
+			{
+				if(strcmp((const char*)tok->m_str.c_str(), tok_enum_to_string[i]) == 0)
+				{
+					tok->m_type = (TokenType)i;
+					tok->m_cat = TokenCat::Operator;
+
+					c = fetch_char(); //for prev_char
+					break;
+				}
+			}
+		}
+		
+		if(tok->m_type == TokenType::NULLTYPE)
+		{
+			tok->m_str.push_back(c);
+			token_error(ErrorType::Fatal, tok, "Unknown character!");
+		}
+	}
+	
 
 
+	prev_char = c;
 
+
+	
 
 
 	
@@ -237,5 +355,11 @@ inline bool
 is_symbol_valid(const char x)
 {
 	return is_numeric(x) || is_alpha(x) || x == '_';
+}
+
+inline bool
+is_whitespace(const char x)
+{
+	return x == ' ' || x == '\t' || x == '\n' || x == '\r';
 }
 

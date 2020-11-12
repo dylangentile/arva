@@ -1,5 +1,7 @@
 #pragma once
 #include <cstdint>
+#include <string>
+#include "token.h"
 
 enum class ErrorType : uint8_t
 {
@@ -16,5 +18,25 @@ class Error
 	Error();
 	~Error();
 public:
+
+	static void init();
+	static void destroy();
+	static void str_error(ErrorType, const char*);
 	static void strf_error(ErrorType, const char*, ...);
+	static void report();
+
+	static void record();
+	static bool got_errors();
+
+private:
+	static Error* g_error;
+	
+	std::string error_str;
+	uint32_t error_count;
+	std::string warning_str;
+	uint32_t warning_count;
+
+	bool m_recieved_errors = false;
 };
+
+void token_error(ErrorType type, Token* tok, const char* msg, ...);

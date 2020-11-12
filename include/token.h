@@ -14,6 +14,8 @@ struct Token
 	uint32_t m_line_num;
 	uint32_t m_col_num;
 	uint32_t m_foffset;
+
+	const char* m_file_path;
 };
 
 
@@ -49,6 +51,11 @@ enum class TokenType : uint16_t
 	CSTRING,
 	BOOL,
 	VOID,
+
+	//keywords
+
+	COMPTIME,
+	CONST,
 
 	//operators
 	DECL_EQUAL,
@@ -97,13 +104,6 @@ enum class TokenType : uint16_t
 	DOT,
 	ARROW,
 
-	//keywords
-
-	COMPTIME,
-	CONST
-
-
-
 
 };
 
@@ -132,6 +132,9 @@ const char* tok_enum_to_string[] =
 	"cstring",
 	"bool",
 	"void",
+
+	"comptime",
+	"const",
 
 
 	":=",
