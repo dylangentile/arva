@@ -48,3 +48,9 @@ SymbolTable::add_declaration(SymbolDeclaration decl)
 	
 
 }
+
+void
+SymbolTable::resolve_references()
+{
+	
+}

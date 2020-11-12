@@ -3,6 +3,14 @@
 #include <string>
 #include "token.h"
 
+
+struct DebugInfo
+{
+	const char* m_file_path;
+	uint32_t m_offset;
+	uint32_t m_line_num;
+};
+
 enum class ErrorType : uint8_t
 {
 	Info,
@@ -40,3 +48,4 @@ private:
 };
 
 void token_error(ErrorType type, Token* tok, const char* msg, ...);
+void dinfo_error(ErrorType type, const DebugInfo& d, const char* msg, ...);

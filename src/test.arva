@@ -1,12 +1,21 @@
+
+
+test := struct
+{
+	i32 a;
+	i32 b;
+}
+
+/*
 std := @import("std");
 print := std.io.print;
 
-
 main := (string[] args -> i32)
 {
-	print("Hello World!\n");
+	print(msg: "Hello World!\n");
 	return 0;
 }
+*/
 
 /*
 

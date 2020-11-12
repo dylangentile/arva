@@ -24,6 +24,7 @@ enum class TokenCat : uint16_t
 {
 	NULLCAT = 0,
 	Keyword,
+	Type,
 	Immediate,
 	Symbol,
 	Operator,
@@ -56,6 +57,10 @@ enum class TokenType : uint16_t
 
 	COMPTIME,
 	CONST,
+	STRUCT,
+	CLASS,
+	ENUM,
+	NAMESPACE,
 
 	//operators
 	DECL_EQUAL,
@@ -100,6 +105,7 @@ enum class TokenType : uint16_t
 
 	//misc
 	SEMICOLON,
+	COLON,
 	COMMA,
 	DOT,
 	ARROW,
@@ -135,6 +141,10 @@ const char* tok_enum_to_string[] =
 
 	"comptime",
 	"const",
+	"struct",
+	"class",
+	"enum",
+	"namespace",
 
 
 	":=",
@@ -175,6 +185,7 @@ const char* tok_enum_to_string[] =
 	"]",
 
 	";",
+	":",
 	",",
 	".",
 	"->",

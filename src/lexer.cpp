@@ -170,7 +170,7 @@ Lexer::fetch_token(Token* tok)
 		c = fetch_char();
 	}
 
-	if(c == '/' && peek() == '*')
+	while(c == '/' && peek() == '*')
 	{
 		while(!(c == '*' && peek() == '/'))
 		{
@@ -184,9 +184,11 @@ Lexer::fetch_token(Token* tok)
 
 		c = fetch_char();
 		c = fetch_char(); //for prev_char
+		skip_whitespace(&c);
 	}
 
 	skip_whitespace(&c);
+	
 
 	if(c == '\0')
 	{
@@ -213,13 +215,28 @@ Lexer::fetch_token(Token* tok)
 			c = fetch_char();
 		}
 		
-		for(uint16_t i = (uint16_t)TokenType::INT8; i != (uint16_t)TokenType::DECL_EQUAL; i++)
+
+
+		for(uint16_t i = (uint16_t)TokenType::COMPTIME; i != (uint16_t)TokenType::DECL_EQUAL; i++)
 		{
 			if(strcmp(tok_enum_to_string[i], tok->m_str.c_str()) == 0)
 			{
 				tok->m_cat = TokenCat::Keyword;
 				tok->m_type = (TokenType)i;
 				break;
+			}
+		}
+
+		if(tok->m_cat == TokenCat::Symbol)
+		{
+			for(uint16_t i = (uint16_t)TokenType::INT8; i != (uint16_t)TokenType::COMPTIME; i++)
+			{
+				if(strcmp(tok_enum_to_string[i], tok->m_str.c_str()) == 0)
+				{
+					tok->m_cat = TokenCat::Type;
+					tok->m_type = (TokenType)i;
+					break;
+				}
 			}
 		}
 
