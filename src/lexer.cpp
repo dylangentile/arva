@@ -38,10 +38,10 @@ token_error(ErrorType type, Token* tok, const char* msg, ...)
 	const char* fmt_str = "\033[1m%s:%u:\033[91m %s\033[0m\n\t\t%s\n\t\t";
 
 	s = snprintf(nullptr, 0, fmt_str, 
-		tok->m_file_path, tok->m_line_num, (const char*)buf, tok->m_str.c_str()) + 1;
+		tok->m_debug.file_path, tok->m_debug.line_num, (const char*)buf, tok->m_str.c_str()) + 1;
 	char* final_msg = (char*)calloc(s + tok->m_str.size() + 1, sizeof(char));
 	snprintf(final_msg, s, fmt_str, 
-		tok->m_file_path, tok->m_line_num, (const char*)buf, tok->m_str.c_str());
+		tok->m_debug.file_path, tok->m_debug.line_num, (const char*)buf, tok->m_str.c_str());
 	s--;
 	final_msg[s] = '^';
 	for(size_t i = 1; i < tok->m_str.size(); i++)
@@ -149,7 +149,7 @@ Lexer::fetch_token(Token* tok)
 {
 	tok->m_type = TokenType::NULLTYPE;
 	tok->m_cat =  TokenCat::NULLCAT;
-	tok->m_file_path = this->m_file_path;
+	tok->m_debug.file_path = this->m_file_path;
 	tok->m_str.clear();
 
 	char c = prev_char;
@@ -197,9 +197,9 @@ Lexer::fetch_token(Token* tok)
 	}
 
 
-	tok->m_line_num = m_current_line;
-	tok->m_col_num = m_current_column;
-	tok->m_foffset = m_current_offset;
+	tok->m_debug.line_num = m_current_line;
+	//tok->m_debug.col_num = m_current_column;
+	tok->m_debug.offset = m_current_offset;
 
 
 	
@@ -207,7 +207,7 @@ Lexer::fetch_token(Token* tok)
 
 	if(is_symbol_valid(c) && !is_numeric(c)) //cannot begin symbol with number
 	{
-		tok->m_cat = TokenCat::Symbol; 
+		tok->m_cat = TokenCat::Name; 
 		
 		while(is_symbol_valid(c))
 		{
@@ -227,7 +227,7 @@ Lexer::fetch_token(Token* tok)
 			}
 		}
 
-		if(tok->m_cat == TokenCat::Symbol)
+		if(tok->m_cat == TokenCat::Name)
 		{
 			for(uint16_t i = (uint16_t)TokenType::INT8; i != (uint16_t)TokenType::COMPTIME; i++)
 			{
@@ -286,7 +286,7 @@ Lexer::fetch_token(Token* tok)
 		}
 
 		if(tok->m_str.size() == 0)
-			Error::strf_error(ErrorType::Error, "Line:%u Invalid character after @: '%c'",  tok->m_line_num, c);
+			Error::strf_error(ErrorType::Error, "Line:%u Invalid character after @: '%c'",  tok->m_debug.line_num, c);
 	}
 	else if(c == '\"')
 	{

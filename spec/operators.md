@@ -11,4 +11,6 @@ The assignment operator takes a value from the right hand side and assigns it to
 This operator declares a new symbol in the current scope on its left hand side, and infers the type of the symbol from its right hand side. Then it assigns the value of the right hand side to the symbol according to the `=` operator's assignment rules. This operator follows a few rules for type infrence:
 - If the right hand side is a [comptime expression](comptime.md), then the entire expression is evaluated at compile time.
 - If the right hand side is a pointer to a type which has the function [trait](traits.md), then the infered type of the left hand side is a refrence to the type with the function trait.
+- If the left hand side has and `&` after its name, than the left hand side will be assigned a reference to the rhs.
+- If the left hand side has a `const` before its name, than the left hand side will be assigned a const version of the rhs type.
 - If the right hand side doesn't fulfil any of the other type infrence rules, then the left hand side has the equivalent type of the right hand side.

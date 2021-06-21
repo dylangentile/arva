@@ -1,9 +1,15 @@
 
 
-test := struct
+ab := struct
 {
 	i32 a;
 	i32 b;
+}
+
+
+multiply := (ab data -> i32)
+{
+	return data.a * data.b;
 }
 
 /*

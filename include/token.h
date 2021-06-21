@@ -5,17 +5,20 @@
 enum class TokenType : uint16_t;
 enum class TokenCat  : uint16_t;
 
+struct DebugInfo
+{
+	const char* file_path;
+	uint32_t offset;
+	uint32_t line_num;
+};
+
 struct Token
 {
 	TokenType m_type;
 	TokenCat  m_cat;
 	std::string m_str;
 
-	uint32_t m_line_num;
-	uint32_t m_col_num;
-	uint32_t m_foffset;
-
-	const char* m_file_path;
+	DebugInfo m_debug;
 };
 
 
@@ -26,7 +29,7 @@ enum class TokenCat : uint16_t
 	Keyword,
 	Type,
 	Immediate,
-	Symbol,
+	Name,
 	Operator,
 	FileEnd, //stdio.h defines EOF sometimes
 	BuiltIn, //any @blah function
@@ -61,6 +64,8 @@ enum class TokenType : uint16_t
 	CLASS,
 	ENUM,
 	NAMESPACE,
+	UNIQUE,
+	SHARED,
 
 	//operators
 	DECL_EQUAL,
@@ -145,6 +150,8 @@ const char* tok_enum_to_string[] =
 	"class",
 	"enum",
 	"namespace",
+	"unique",
+	"shared",
 
 
 	":=",

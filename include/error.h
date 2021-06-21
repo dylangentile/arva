@@ -4,12 +4,7 @@
 #include "token.h"
 
 
-struct DebugInfo
-{
-	const char* m_file_path;
-	uint32_t m_offset;
-	uint32_t m_line_num;
-};
+
 
 enum class ErrorType : uint8_t
 {

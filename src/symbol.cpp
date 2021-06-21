@@ -27,24 +27,32 @@ SymbolTable::add_reference(SymbolReference ref)
 {
 	assert(s != nullptr && "SymbolTable uninitialized!");
 
-	auto finder = s->m_reference_map.find(ref.m_tok->m_str);
-	if(finder == s->m_reference_map.end())
-		s->m_reference_map.insert(std::make_pair(ref.m_tok->m_str, std::vector<SymbolReference>({ref})));
+	auto finder = s->reference_map.find(ref.str);
+	if(finder == s->reference_map.end())
+		s->reference_map.insert(std::make_pair(ref.str, std::vector<SymbolReference>({ref})));
 	else
 		finder->second.push_back(ref);
 }
 
 void
-SymbolTable::add_declaration(SymbolDeclaration decl)
+SymbolTable::add_struct_declaration(StructDecl decl)
 {
 	assert(s != nullptr && "SymbolTable uninitialized!");
 	
-	auto finder = s->m_decl_map.find(decl.m_tok->m_str);
-	if(finder == s->m_decl_map.end())
-		token_error(ErrorType::Error, decl.m_tok, "Redeclaration of \033[0m\033[1;96m%s:%u\033[0m:", 
-			finder->second.m_tok->m_file_path, finder->second.m_tok->m_line_num);
+	auto finder = s->decl_map.find(decl.s_name);
+	if(finder != s->decl_map.end())
+		dinfo_error(ErrorType::Error, decl.debug, "Symbol is already in use!");
 	else
-		s->m_decl_map.insert(std::make_pair(decl.m_tok->m_str, decl));
+	{
+		s->struct_vec.push_back(decl);
+		StructDecl* ptr = s->struct_vec.data() + (s->struct_vec.size() - 1);
+
+		SymbolDeclaration sym_decl;
+		sym_decl.type = SymbolType::Structure;
+		sym_decl.ptr = ptr;
+
+		s->decl_map.insert(std::make_pair(decl.s_name, sym_decl));
+	}
 	
 
 }

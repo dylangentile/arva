@@ -115,8 +115,8 @@ dinfo_error(ErrorType type, const DebugInfo& d, const char* msg, ...)
 
 	const size_t l_buf_size = 80 - 8; //space left after two tabs;
 	char l_buf[80 - 8];
-	FILE* fd = fopen(d.m_file_path, "r");
-	fseek(fd, d.m_offset, 0);
+	FILE* fd = fopen(d.file_path, "r");
+	fseek(fd, d.offset, 0);
 	fread(l_buf, sizeof(char), l_buf_size - 1, fd);
 	l_buf[l_buf_size - 1] = '\0';
 	char* l_ptr = l_buf;
@@ -127,10 +127,10 @@ dinfo_error(ErrorType type, const DebugInfo& d, const char* msg, ...)
 	const char* fmt_str = "\033[1m%s:%u:\033[91m %s\033[0m\n\t\t%s\n";
 
 	s = snprintf(nullptr, 0, fmt_str, 
-		d.m_file_path, d.m_line_num, (const char*)buf, (const char*)l_buf) + 1;
+		d.file_path, d.line_num, (const char*)buf, (const char*)l_buf) + 1;
 	char* final_msg = (char*)calloc(s, sizeof(char));
 	snprintf(final_msg, s, fmt_str, 
-		d.m_file_path, d.m_line_num, (const char*)buf, (const char*)l_buf);
+		d.file_path, d.line_num, (const char*)buf, (const char*)l_buf);
 	
 	Error::str_error(type, (const char*)final_msg);
 	

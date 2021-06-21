@@ -1,13 +1,16 @@
 main.o: main.cpp ../include/parser.h ../include/token.h \
-  ../include/lexer.h ../include/symbol.h ../include/error.h
+  ../include/lexer.h ../include/type.h ../include/symbol.h \
+  ../include/error.h
 lexer.o: lexer.cpp ../include/lexer.h ../include/error.h \
   ../include/token.h
 parser.o: parser.cpp ../include/parser.h ../include/token.h \
-  ../include/lexer.h ../include/error.h
-ast.o: ast.cpp ../include/ast.h
+  ../include/lexer.h ../include/type.h ../include/error.h
+ast.o: ast.cpp ../include/ast.h ../include/symbol.h ../include/token.h \
+  ../include/type.h
 semantic.o: semantic.cpp ../include/semantic.h
 optimizer.o: optimizer.cpp ../include/optimizer.h
 codegen.o: codegen.cpp ../include/codegen.h
 symbol.o: symbol.cpp ../include/symbol.h ../include/token.h \
-  ../include/error.h ../include/lexer.h
+  ../include/type.h ../include/error.h ../include/lexer.h
+type.o: type.cpp ../include/type.h ../include/token.h
 error.o: error.cpp ../include/error.h ../include/token.h
