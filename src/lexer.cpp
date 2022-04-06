@@ -78,6 +78,7 @@ Lexer::terminate()
 	m_fd = nullptr;
 
 	m_current_offset = 0;
+	m_line_offset = 0;
 	m_current_fd_offset = 0;
 	m_reached_end = false;
 
@@ -97,7 +98,10 @@ Lexer::fetch_char()
 	m_current_pointer++;
 	
 	if(val == '\n')
+	{
+		m_line_offset = m_current_offset + 1;
 		m_current_line++; //todo: line number counting broken
+	}
 	m_current_column++;
 	m_current_offset++;
 
@@ -120,6 +124,18 @@ Lexer::fetch_token(Token* tok)
 	tok->cat =  TokenCat::NULLCAT;
 	tok->debug.file_path = this->m_file_path;
 	tok->str.clear();
+
+	struct DeferThing
+	{
+		Token* t;
+
+		DeferThing(Token* t_) : t(t_){}
+		~DeferThing()
+		{
+			t->debug.char_count = t->str.size();
+		}
+	} set_debug(tok);
+
 
 	char c = prev_char;
 	
@@ -168,8 +184,8 @@ Lexer::fetch_token(Token* tok)
 
 	tok->debug.line_num = m_current_line;
 	//tok->debug.col_num = m_current_column;
-	tok->debug.offset = m_current_offset;
-
+	tok->debug.token_offset = m_current_offset - m_line_offset;
+	tok->debug.line_offset = m_line_offset;
 
 	
 

@@ -20,10 +20,8 @@ private:
 	Token* fetch_token();
 	Token* lookahead(uint8_t i = 1);
 
-	void parse_struct();
-	Type* parse_type();
 
-	void parse_function();
+	
 	
 private:
 	Lexer* m_lexer;

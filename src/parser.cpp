@@ -60,6 +60,31 @@ Parser::lookahead(uint8_t i)
 void 
 Parser::parse()
 {
-	fetch_token();
+	bool working = true;
+
+	while(working)
+	{
+		fetch_token();
+		switch(c_tok.cat)
+		{
+			case TokenCat::Name:
+			{
+
+			}
+			break;
+
+			case TokenCat::FileEnd:
+			{
+				working = false;
+			}
+			break;
+
+			default:
+			{
+				log_token_error(c_tok, "bad token in global namespace!");
+			}
+			break;
+		};
+	}
 	
 }

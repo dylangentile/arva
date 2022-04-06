@@ -8,3 +8,6 @@ token_type_to_raw_type(TokenType type)
 
 	return (RawTypeEnum)((uint16_t)type);
 }
+
+Type::Type(){}
+Type::~Type(){}

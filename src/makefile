@@ -1,10 +1,10 @@
 CXX := clang++
-CXXFLAGS := -I../include -std=c++11 -Wall -Wextra -Weffc++ -pedantic 
+CXXFLAGS := -I../include -std=c++11 -Werror -Wall -Wextra -Weffc++ -pedantic 
 
 DEBUGFLAGS := -g
 RELEASEFLAGS := -O3
 
-OBJ := main.o lexer.o parser.o ast.o semantic.o optimizer.o codegen.o symbol.o type.o error.o
+OBJ := main.o lexer.o parser.o air.o semantic.o optimizer.o codegen.o symbol.o type.o error.o
 
 .PHONY: all debug release clean
 

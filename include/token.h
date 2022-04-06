@@ -1,16 +1,13 @@
 #pragma once
+#include "debug.h"
+
 #include <cstdint>
 #include <string>
+
 
 enum class TokenType : uint16_t;
 enum class TokenCat  : uint16_t;
 
-struct DebugInfo
-{
-	const char* file_path;
-	uint32_t offset;
-	uint32_t line_num;
-};
 
 struct Token
 {
@@ -34,6 +31,8 @@ enum class TokenCat : uint16_t
 	FileEnd,
 };
 
+
+//update type.h and lexer.cpp whenever you update this
 enum class TokenType : uint16_t
 {
 	NULLTYPE = 0,
@@ -57,7 +56,10 @@ enum class TokenType : uint16_t
 	//keywords
 
 	COMPTIME,
-	CONST,
+	IF,
+	SWITCH,
+	WHILE,
+	FOR,
 	STRUCT,
 	CLASS,
 	ENUM,
@@ -139,7 +141,10 @@ const char* tok_enum_to_string[] =
 	"void",
 
 	"comptime",
-	"const",
+	"if",
+	"switch",
+	"while",
+	"for",
 	"struct",
 	"class",
 	"enum",

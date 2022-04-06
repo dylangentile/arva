@@ -1,12 +1,13 @@
 #pragma once
 #include "token.h"
 
-enum class TypeModifier : uint16_t
+enum class TypeAccess : uint16_t
 {
-	Null,
-	CONST,
+	Immutable,
+	Mutable,
 };
 
+//needs to be in same order as token.h types
 enum class RawTypeEnum : uint16_t
 {
 	Null,
@@ -21,55 +22,41 @@ enum class RawTypeEnum : uint16_t
 
 	FLOAT,
 	DOUBLE,
-	STRING,
-	CSTRING,
+	CHAR,
 	BOOL,
 	VOID,
 };
 
 enum class TypeCategory : uint16_t
 {
-	Null,
-	Class,
-	Namespace,
-	Struct,
-	Pointer,
 	Raw,
-	Unknown,
+	Symbol,
 };
 
-enum class PointerCategory : uint16_t
+enum class TypeStorage : uint16_t
 {
-	Null,
-	Regular,
-	Unique,
-	Shared,
+	Reference,
+	Unsafe,
+	Value,
 };
 
 struct Type
 {
+	TypeAccess access;
+	TypeStorage storage;
+
 	TypeCategory cat;
-	TypeModifier mod;
+	union
+	{
+			RawTypeEnum raw;
+			std::string symbol;
+	};
 
-};
 
-struct Type_Unknown
-{
-	Type type;
-	Type* ref = nullptr;
-};
+	Type();
+	~Type();
 
-struct Type_Raw
-{
-	Type type;
-	RawTypeEnum raw;
-};
 
-struct Type_Ptr
-{
-	Type type;
-	PointerCategory pcat;
-	Type* pointee;
 };
 
 

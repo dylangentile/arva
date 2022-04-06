@@ -116,25 +116,42 @@ dinfo_error_(ErrorType type, const DebugInfo& d, const char* msg, ...)
 	const size_t l_buf_size = 80 - 8; //space left after two tabs;
 	char l_buf[80 - 8];
 	FILE* fd = fopen(d.file_path, "r");
-	fseek(fd, d.offset, 0);
+	fseek(fd, d.line_offset, 0);
 	fread(l_buf, sizeof(char), l_buf_size - 1, fd);
-	l_buf[l_buf_size - 1] = '\0';
 	char* l_ptr = l_buf;
 	while(l_ptr != l_buf + l_buf_size && *l_ptr != '\n') 
+	{
+		if(*l_ptr == '\t')
+			*l_ptr = ' ';
 		l_ptr++;
+	}
 	*l_ptr = '\0';
 
 	const char* fmt_str = "\033[1m%s:%u:\033[91m %s\033[0m\n\t\t%s\n";
 
+
+	std::vector<char> msg_vec;
 	s = snprintf(nullptr, 0, fmt_str, 
 		d.file_path, d.line_num, (const char*)buf, (const char*)l_buf) + 1;
-	char* final_msg = (char*)calloc(s, sizeof(char));
-	snprintf(final_msg, s, fmt_str, 
+	msg_vec.resize(s);
+	snprintf(msg_vec.data(), s, fmt_str, 
 		d.file_path, d.line_num, (const char*)buf, (const char*)l_buf);
+	//writes '\0'
+	msg_vec.erase(msg_vec.end() - 1);
+
+	msg_vec.push_back('\t');
+	msg_vec.push_back('\t');
 	
-	Error::str_error(type, (const char*)final_msg);
+	for(size_t i = 0; i < d.token_offset - 1; i++)
+		msg_vec.push_back(' ');
+	msg_vec.push_back('^');
+	for(size_t i = 0; i < d.char_count - 1; i++)
+		msg_vec.push_back('~');
+
+	msg_vec.push_back('\n');
+	msg_vec.push_back('\0');
+	Error::str_error(type, (const char*)msg_vec.data());
 	
-	free(final_msg);
 	free(buf);
 
 }

@@ -28,6 +28,7 @@ private:
 	FILE*		m_fd			 = nullptr;
 	char*		m_input_buffer   = nullptr;
 	uint32_t	m_current_offset = 0;
+	uint32_t	m_line_offset = 0;
 	uint32_t	m_current_fd_offset = 0;
 	bool		m_reached_end	 = false;
 
