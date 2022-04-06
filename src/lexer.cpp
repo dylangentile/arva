@@ -1,4 +1,4 @@
-#define ARVA_INCLUDE_ENUM_STR_CRAP //must be first line
+#define ARVA_INCLUDE_ENUM_STR //must be first line
 #include "lexer.h"
 #include "error.h"
 #include "token.h"
@@ -17,44 +17,6 @@ inline bool is_whitespace(const char);
 
 Lexer::Lexer(){}
 Lexer::~Lexer(){}
-
-
-//this is probably the worst written code in this file.
-// my apologies but for error printing this will probably get replaced in the future anyway
-void
-token_error(ErrorType type, Token* tok, const char* msg, ...)
-{
-
-	va_list args1, args2;
-	va_start(args1, msg);
-	va_copy(args2, args1);
-
-	size_t s = vsnprintf(nullptr, 0, msg, args1) + 1; //include null terminator
-	char* buf = (char*)calloc(s, sizeof(char));
-	vsnprintf(buf, s, msg, args2);
-	
-	va_end(args2);
-
-	const char* fmt_str = "\033[1m%s:%u:\033[91m %s\033[0m\n\t\t%s\n\t\t";
-
-	s = snprintf(nullptr, 0, fmt_str, 
-		tok->m_debug.file_path, tok->m_debug.line_num, (const char*)buf, tok->m_str.c_str()) + 1;
-	char* final_msg = (char*)calloc(s + tok->m_str.size() + 1, sizeof(char));
-	snprintf(final_msg, s, fmt_str, 
-		tok->m_debug.file_path, tok->m_debug.line_num, (const char*)buf, tok->m_str.c_str());
-	s--;
-	final_msg[s] = '^';
-	for(size_t i = 1; i < tok->m_str.size(); i++)
-		final_msg[s + i] = '~';
-	final_msg[s + tok->m_str.size()] = '\n';
-	final_msg[s + tok->m_str.size() + 1] = '\0';
-	
-	Error::strf_error(type, (const char*)final_msg);
-	
-	free(final_msg);
-	free(buf);
-
-}
 
 void
 Lexer::read_next()
@@ -91,7 +53,7 @@ Lexer::peek()
 
 
 void
-Lexer::init_lexer(const char* path)
+Lexer::initialize(const char* path)
 {
 	m_fd = fopen(path, "r");
 	if(m_fd == nullptr)
@@ -108,13 +70,20 @@ Lexer::init_lexer(const char* path)
 }
 
 void
-Lexer::destroy()
+Lexer::terminate()
 {
 	free(m_input_buffer);
 	m_input_buffer = nullptr;
 	fclose(m_fd);
 	m_fd = nullptr;
 
+	m_current_offset = 0;
+	m_current_fd_offset = 0;
+	m_reached_end = false;
+
+	m_current_line = 1;
+	m_current_column = 1;
+	m_current_pointer = nullptr;
 }
 
 char
@@ -147,10 +116,10 @@ Lexer::skip_whitespace(char* c)
 void
 Lexer::fetch_token(Token* tok)
 {
-	tok->m_type = TokenType::NULLTYPE;
-	tok->m_cat =  TokenCat::NULLCAT;
-	tok->m_debug.file_path = this->m_file_path;
-	tok->m_str.clear();
+	tok->type = TokenType::NULLTYPE;
+	tok->cat =  TokenCat::NULLCAT;
+	tok->debug.file_path = this->m_file_path;
+	tok->str.clear();
 
 	char c = prev_char;
 	
@@ -162,7 +131,7 @@ Lexer::fetch_token(Token* tok)
 		{
 			if((c = fetch_char()) == '\0')
 			{
-				tok->m_cat = TokenCat::FileEnd;
+				tok->cat = TokenCat::FileEnd;
 				return;
 			}
 		}
@@ -177,7 +146,7 @@ Lexer::fetch_token(Token* tok)
 			if((c = fetch_char()) == '\0')
 			{
 				Error::strf_error(ErrorType::Error, "Unterminated comment at EOF!");
-				tok->m_cat = TokenCat::FileEnd;
+				tok->cat = TokenCat::FileEnd;
 				return;
 			}
 		}
@@ -192,14 +161,14 @@ Lexer::fetch_token(Token* tok)
 
 	if(c == '\0')
 	{
-		tok->m_cat = TokenCat::FileEnd;
+		tok->cat = TokenCat::FileEnd;
 		return;
 	}
 
 
-	tok->m_debug.line_num = m_current_line;
-	//tok->m_debug.col_num = m_current_column;
-	tok->m_debug.offset = m_current_offset;
+	tok->debug.line_num = m_current_line;
+	//tok->debug.col_num = m_current_column;
+	tok->debug.offset = m_current_offset;
 
 
 	
@@ -207,11 +176,11 @@ Lexer::fetch_token(Token* tok)
 
 	if(is_symbol_valid(c) && !is_numeric(c)) //cannot begin symbol with number
 	{
-		tok->m_cat = TokenCat::Name; 
+		tok->cat = TokenCat::Name; 
 		
 		while(is_symbol_valid(c))
 		{
-			tok->m_str.push_back(c);
+			tok->str.push_back(c);
 			c = fetch_char();
 		}
 		
@@ -219,22 +188,22 @@ Lexer::fetch_token(Token* tok)
 
 		for(uint16_t i = (uint16_t)TokenType::COMPTIME; i != (uint16_t)TokenType::DECL_EQUAL; i++)
 		{
-			if(strcmp(tok_enum_to_string[i], tok->m_str.c_str()) == 0)
+			if(strcmp(tok_enum_to_string[i], tok->str.c_str()) == 0)
 			{
-				tok->m_cat = TokenCat::Keyword;
-				tok->m_type = (TokenType)i;
+				tok->cat = TokenCat::Keyword;
+				tok->type = (TokenType)i;
 				break;
 			}
 		}
 
-		if(tok->m_cat == TokenCat::Name)
+		if(tok->cat == TokenCat::Name)
 		{
 			for(uint16_t i = (uint16_t)TokenType::INT8; i != (uint16_t)TokenType::COMPTIME; i++)
 			{
-				if(strcmp(tok_enum_to_string[i], tok->m_str.c_str()) == 0)
+				if(strcmp(tok_enum_to_string[i], tok->str.c_str()) == 0)
 				{
-					tok->m_cat = TokenCat::Type;
-					tok->m_type = (TokenType)i;
+					tok->cat = TokenCat::Type;
+					tok->type = (TokenType)i;
 					break;
 				}
 			}
@@ -252,51 +221,51 @@ Lexer::fetch_token(Token* tok)
 			while(is_numeric(c) || c == 'A' || c == 'B' || c == 'C' || c == 'D' || c == 'E' || c == 'F'
 				|| c == 'a' || c == 'b' || c == 'c' || c == 'd' || c == 'e' || c == 'f')
 			{
-				tok->m_str.push_back(c);
+				tok->str.push_back(c);
 				c = fetch_char();
 			}
 
-			tok->m_type = TokenType::UINT64;
+			tok->type = TokenType::UINT64;
 		}
 		else
 		{
-			tok->m_str.push_back(prev);
+			tok->str.push_back(prev);
 			while(is_numeric(c))
 			{
-				tok->m_str.push_back(c);
+				tok->str.push_back(c);
 				c = fetch_char();
 			}
 
 			//todo: determine if it actually fits, if not make UINT64, or raise error!
-			tok->m_type = TokenType::INT64;
+			tok->type = TokenType::INT64;
 		}
 
-		tok->m_cat = TokenCat::Immediate;
+		tok->cat = TokenCat::Immediate;
 		
 	}
-	else if(c == '@')
+	/*else if(c == '@')
 	{
-		tok->m_cat = TokenCat::BuiltIn;
+		tok->cat = TokenCat::BuiltIn;
 		c = fetch_char();
 
 		while(is_symbol_valid(c) && !is_numeric(c))
 		{
-			tok->m_str.push_back(c);
+			tok->str.push_back(c);
 			c = fetch_char();
 		}
 
-		if(tok->m_str.size() == 0)
-			Error::strf_error(ErrorType::Error, "Line:%u Invalid character after @: '%c'",  tok->m_debug.line_num, c);
-	}
+		if(tok->str.size() == 0)
+			Error::strf_error(ErrorType::Error, "Line:%u Invalid character after @: '%c'",  tok->debug.line_num, c);
+	}*/
 	else if(c == '\"')
 	{
 		c = fetch_char();
 		while(c != '\"')
 		{
-			tok->m_str.push_back(c);
+			tok->str.push_back(c);
 			if((c = fetch_char()) == '\0')
 			{
-				token_error(ErrorType::Fatal, tok, "Readed EOF before end of terminating quote!");
+				log_token_error(*tok, "Readed EOF before end of terminating quote!");
 			}
 		}
 
@@ -306,14 +275,14 @@ Lexer::fetch_token(Token* tok)
 	else
 	{
 		
-		tok->m_str.push_back(c);
-		tok->m_str.push_back(peek());
-		for(uint16_t i = (uint16_t)TokenType::DECL_EQUAL; i != (uint16_t)TokenType::ARROW + 1; i++)
+		tok->str.push_back(c);
+		tok->str.push_back(peek());
+		for(uint16_t i = (uint16_t)TokenType::DECL_EQUAL; i != (uint16_t)TokenType::AT + 1; i++)
 		{
-			if(strcmp((const char*)tok->m_str.c_str(), tok_enum_to_string[i]) == 0)
+			if(strcmp((const char*)tok->str.c_str(), tok_enum_to_string[i]) == 0)
 			{
-				tok->m_type = (TokenType)i;
-				tok->m_cat = TokenCat::Operator;
+				tok->type = (TokenType)i;
+				tok->cat = TokenCat::Operator;
 
 				fetch_char(); //peek
 				c = fetch_char(); //for prev_char
@@ -321,16 +290,16 @@ Lexer::fetch_token(Token* tok)
 			}
 		}
 
-		if(tok->m_type == TokenType::NULLTYPE)
+		if(tok->type == TokenType::NULLTYPE)
 		{
-			tok->m_str.clear();
-			tok->m_str.push_back(c);
-			for(uint16_t i = (uint16_t)TokenType::DECL_EQUAL; i != (uint16_t)TokenType::ARROW + 1; i++)
+			tok->str.clear();
+			tok->str.push_back(c);
+			for(uint16_t i = (uint16_t)TokenType::DECL_EQUAL; i != (uint16_t)TokenType::AT + 1; i++)
 			{
-				if(strcmp((const char*)tok->m_str.c_str(), tok_enum_to_string[i]) == 0)
+				if(strcmp((const char*)tok->str.c_str(), tok_enum_to_string[i]) == 0)
 				{
-					tok->m_type = (TokenType)i;
-					tok->m_cat = TokenCat::Operator;
+					tok->type = (TokenType)i;
+					tok->cat = TokenCat::Operator;
 
 					c = fetch_char(); //for prev_char
 					break;
@@ -338,10 +307,10 @@ Lexer::fetch_token(Token* tok)
 			}
 		}
 		
-		if(tok->m_type == TokenType::NULLTYPE)
+		if(tok->type == TokenType::NULLTYPE)
 		{
-			tok->m_str.push_back(c);
-			token_error(ErrorType::Fatal, tok, "Unknown character!");
+			tok->str.push_back(c);
+			log_token_fatal(*tok, "Unknown character!");
 		}
 	}
 	

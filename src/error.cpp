@@ -11,13 +11,13 @@ Error::Error() : error_count(0), warning_count(0) {}
 Error::~Error(){}
 
 void
-Error::init()
+Error::initialize()
 {
 	g_error = new Error();
 }
 
 void
-Error::destroy()
+Error::terminate()
 {
 	delete g_error;
 }
@@ -100,7 +100,7 @@ Error::report()
 }
 
 void 
-dinfo_error(ErrorType type, const DebugInfo& d, const char* msg, ...)
+dinfo_error_(ErrorType type, const DebugInfo& d, const char* msg, ...)
 {
 
 	va_list args1, args2;

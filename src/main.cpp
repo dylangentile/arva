@@ -24,18 +24,16 @@ main(int argc, const char* argv[])
 		fprintf(stderr, "Usage: %s source.arva\n", argv[0]);
 		return 1;
 	}
-	Error::init();
-	SymbolTable::init();
+	Error::initialize();
 
 	Parser parser;
-	parser.init(argv[1]);
+	parser.initialize(argv[1]);
 	parser.parse();
-
+	parser.terminate();
 	
-	Error::report();
 
-	SymbolTable::destroy();
-	Error::destroy();
+	Error::report();
+	Error::terminate();
 
 	return 0;
 }

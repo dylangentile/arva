@@ -22,8 +22,8 @@ class Error
 	~Error();
 public:
 
-	static void init();
-	static void destroy();
+	static void initialize();
+	static void terminate();
 	static void str_error(ErrorType, const char*);
 	static void strf_error(ErrorType, const char*, ...);
 	static void report();
@@ -42,5 +42,13 @@ private:
 	bool m_recieved_errors = false;
 };
 
-void token_error(ErrorType type, Token* tok, const char* msg, ...);
-void dinfo_error(ErrorType type, const DebugInfo& d, const char* msg, ...);
+void dinfo_error_(ErrorType type, const DebugInfo& d, const char* msg, ...);
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wgnu-zero-variadic-macro-arguments"
+
+#define log_token_fatal(tok, msg, ...) dinfo_error_(ErrorType::Fatal, (tok).debug, msg, ##__VA_ARGS__)
+#define log_token_error(tok, msg, ...) dinfo_error_(ErrorType::Error, (tok).debug, msg, ##__VA_ARGS__)
+#define log_token_warn(tok, msg, ...) dinfo_error_(ErrorType::Warning, (tok).debug, msg, ##__VA_ARGS__)
+
+#pragma clang diagnostic pop

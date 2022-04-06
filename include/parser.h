@@ -11,7 +11,9 @@ public:
 	Parser();
 	~Parser();
 
-	void init(const char*);
+	void initialize(const char*);
+	void terminate();
+	
 	void parse();
 
 private:

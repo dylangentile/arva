@@ -14,11 +14,11 @@ struct DebugInfo
 
 struct Token
 {
-	TokenType m_type;
-	TokenCat  m_cat;
-	std::string m_str;
+	TokenType type;
+	TokenCat  cat;
+	std::string str;
 
-	DebugInfo m_debug;
+	DebugInfo debug;
 };
 
 
@@ -31,8 +31,7 @@ enum class TokenCat : uint16_t
 	Immediate,
 	Name,
 	Operator,
-	FileEnd, //stdio.h defines EOF sometimes
-	BuiltIn, //any @blah function
+	FileEnd,
 };
 
 enum class TokenType : uint16_t
@@ -51,8 +50,7 @@ enum class TokenType : uint16_t
 
 	FLOAT,
 	DOUBLE,
-	STRING,
-	CSTRING,
+	CHAR,
 	BOOL,
 	VOID,
 
@@ -64,9 +62,7 @@ enum class TokenType : uint16_t
 	CLASS,
 	ENUM,
 	NAMESPACE,
-	UNIQUE,
-	SHARED,
-
+	
 	//operators
 	DECL_EQUAL,
 	ASSIGN_EQUAL,
@@ -114,13 +110,12 @@ enum class TokenType : uint16_t
 	COMMA,
 	DOT,
 	ARROW,
-
-
+	AT,
 };
 
 
 
-#ifndef ARVA_INCLUDE_ENUM_STR_CRAP
+#ifndef ARVA_INCLUDE_ENUM_STR
 extern const char* tok_enum_to_string[];
 extern const size_t tok_enum_to_string_size;
 #else
@@ -139,8 +134,7 @@ const char* tok_enum_to_string[] =
 
 	"float",
 	"double",
-	"string",
-	"cstring",
+	"char",
 	"bool",
 	"void",
 
@@ -150,8 +144,6 @@ const char* tok_enum_to_string[] =
 	"class",
 	"enum",
 	"namespace",
-	"unique",
-	"shared",
 
 
 	":=",
@@ -196,6 +188,7 @@ const char* tok_enum_to_string[] =
 	",",
 	".",
 	"->",
+	"@",
 
 };
 

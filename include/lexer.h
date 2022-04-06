@@ -12,10 +12,11 @@ public:
 	Lexer();
 	~Lexer();
 
-	void init_lexer(const char* path);
+	void initialize(const char* path);
+	void terminate();
+	
 	void fetch_token(Token* tok);
-	void destroy();
-
+	
 private:
 	void read_next();
 	char fetch_char();

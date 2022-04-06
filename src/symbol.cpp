@@ -1,5 +1,5 @@
 #include "symbol.h"
-#include "error.h"
+/*#include "error.h"
 #include "lexer.h"
 #include <cassert>
 
@@ -62,3 +62,4 @@ SymbolTable::resolve_references()
 {
 	
 }
+*/

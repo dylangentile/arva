@@ -1,6 +1,6 @@
 #pragma once
 #include "token.h"
-#include "type.h"
+/*#include "type.h"
 #include "ast.h"
 #include <string>
 #include <unordered_map>
@@ -87,3 +87,4 @@ private:
 
 	std::vector<StructDecl> struct_vec;
 };
+*/
