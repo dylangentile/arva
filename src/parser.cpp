@@ -1,6 +1,7 @@
 #include "parser.h"
 #include "symbol.h"
 #include "error.h"
+
 #include <cstdio>
 
 Parser::Parser() 
@@ -29,14 +30,14 @@ Parser::terminate()
 Token*
 Parser::fetch_token()
 {	
-	if(lookahead_queue.empty())
+	if(m_lookahead_queue.empty())
 	{
 		m_lexer->fetch_token(&c_tok);
 	}
 	else
 	{
-		c_tok = lookahead_queue.front();
-		lookahead_queue.pop_front();
+		c_tok = m_lookahead_queue.front();
+		m_lookahead_queue.pop_front();
 	}
 
 	
@@ -46,21 +47,131 @@ Parser::fetch_token()
 Token*
 Parser::lookahead(uint8_t i)
 {
-	while(lookahead_queue.size() != i)
+	while(m_lookahead_queue.size() != i)
 	{
 		Token tok;
 		m_lexer->fetch_token(&tok);
-		lookahead_queue.push_back(tok);
+		m_lookahead_queue.push_back(tok);
 	}
 
 
-	return &lookahead_queue[i - 1];
+	return &m_lookahead_queue[i - 1];
 }
 
-void 
+void
+Parser::push_scope(AIR_Scope* s)
+{
+	m_scope_stack.push(s);
+	c_scope = s;
+}
+
+void
+Parser::pop_scope()
+{
+	m_scope_stack.pop();
+	c_scope = m_scope_stack.top();
+}
+
+
+AIR_Node*
+Parser::parse_expression()
+{
+	AIR_Node* result = nullptr;
+	switch(c_tok.cat)
+	{
+		case TokenCat::Keyword:
+		{
+			switch(c_tok.type)
+			{
+				case TokenType::FUNC:
+				{
+
+				}
+				break;
+				case TokenType::STRUCT:
+				{
+
+				}
+				break;
+				case TokenType::CLASS:
+				{
+
+				}
+				break;
+				case TokenType::ENUM:
+				{
+
+				}
+				break;
+				case TokenType::NAMESPACE:
+				{
+
+				}
+				break;
+
+				default:
+				{
+					log_token_error(c_tok, "unexpected keyword in expression!");
+				}
+				break;
+			}
+		}
+		break;
+
+
+		case TokenCat::Name:
+		{
+			if(lookahead()->type == TokenType::SEMICOLON)
+			{
+				
+				AIR_SymbolRef* ref = new AIR_SymbolRef;
+				ref->str = c_tok.str;
+				fetch_token(); //consume current token, now on semicolon
+
+				result = static_cast<AIR_Node*>(ref);
+				break;
+			}
+		}
+		break;
+
+		case TokenCat::Immediate:
+		{
+			if(lookahead()->type == TokenType::SEMICOLON)
+			{
+				AIR_Immediate* immediate = new AIR_Immediate;
+				immediate->str = c_tok.str;
+				fetch_token(); //consume current token, now on semicolon
+
+				result = static_cast<AIR_Node*>(immediate);
+				break;
+			}
+		}
+		break;
+
+		default:
+		{
+			log_token_error(c_tok, "invalid token to begin expression!");
+		}
+		break;
+	}
+
+
+	if(result == nullptr)
+		log_token_error(c_tok, "failed to resolve expression!");
+
+	return result;
+}
+
+
+AIR_Scope* 
 Parser::parse()
 {
 	bool working = true;
+
+	AIR_Scope* global_scope = new AIR_Scope;
+	push_scope(global_scope);
+
+	std::vector<AIR_Node*>& decl_vec = global_scope->node_vec;
 
 	while(working)
 	{
@@ -69,6 +180,26 @@ Parser::parse()
 		{
 			case TokenCat::Name:
 			{
+				AIR_SymbolDecl* decl = new AIR_SymbolDecl;
+				decl->name = c_tok.str;
+
+				fetch_token();
+
+				if(c_tok.type != TokenType::DECL_EQUAL)
+				{
+					log_token_error(c_tok, "expected ':='");
+					break;
+				}
+
+
+				fetch_token();
+
+				decl->value = parse_expression();
+
+				decl_vec.push_back(decl);
+
+
+
 
 			}
 			break;
@@ -81,10 +212,12 @@ Parser::parse()
 
 			default:
 			{
-				log_token_error(c_tok, "bad token in global namespace!");
+				//log_token_error(c_tok, "bad token in global namespace!");
 			}
 			break;
 		};
 	}
+
+	return global_scope;
 	
 }

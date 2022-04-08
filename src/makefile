@@ -1,7 +1,7 @@
 CXX := clang++
 CXXFLAGS := -I../include -std=c++11 -Werror -Wall -Wextra -Weffc++ -pedantic 
 
-DEBUGFLAGS := -g
+DEBUGFLAGS := -g -fstandalone-debug
 RELEASEFLAGS := -O3
 
 OBJ := main.o lexer.o parser.o air.o semantic.o optimizer.o codegen.o symbol.o type.o error.o

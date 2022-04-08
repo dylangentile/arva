@@ -31,6 +31,7 @@ enum class TypeCategory : uint16_t
 {
 	Raw,
 	Symbol,
+	Unresolved,
 };
 
 enum class TypeStorage : uint16_t

@@ -14,6 +14,7 @@
 
 enum class AIR_Node_ID
 {
+	Scope,
 	BinaryExpr,
 	SymbolDecl,
 	SymbolRef,
@@ -34,6 +35,16 @@ struct AIR_Node
 	~AIR_Node();
 };
 
+struct AIR_Scope : public AIR_Node
+{
+	std::vector<AIR_Node*> node_vec;
+	
+
+	
+	AIR_Scope();
+	~AIR_Scope();	
+};
+
 struct AIR_BinaryExpr : public AIR_Node
 {
 
@@ -45,7 +56,9 @@ struct AIR_BinaryExpr : public AIR_Node
 
 struct AIR_SymbolDecl : public AIR_Node
 {
-
+	std::string name;
+	AIR_Node* value;
+	Type type;
 
 	AIR_SymbolDecl();
 	~AIR_SymbolDecl();
@@ -53,7 +66,7 @@ struct AIR_SymbolDecl : public AIR_Node
 
 struct AIR_SymbolRef : public AIR_Node
 {
-
+	std::string str;
 
 	AIR_SymbolRef();
 	~AIR_SymbolRef();
@@ -62,7 +75,7 @@ struct AIR_SymbolRef : public AIR_Node
 
 struct AIR_Immediate : public AIR_Node
 {
-
+	std::string str;
 
 	AIR_Immediate();
 	~AIR_Immediate();
@@ -94,6 +107,11 @@ struct AIR_Func : public AIR_Node
 	AIR_Func();
 	~AIR_Func();
 };
+
+
+
+
+std::string print_air_node(const AIR_Node* n, bool print_ids);
 
 
 

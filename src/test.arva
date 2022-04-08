@@ -1,4 +1,7 @@
 
+x := y;
+w := "hello";
+
 
 ab := struct
 {
@@ -7,7 +10,7 @@ ab := struct
 };
 
 
-multiply := (ab data -> i32)
+multiply := func (ab data -> i32)
 {
 	return data.a * data.b;
 };
@@ -16,7 +19,7 @@ multiply := (ab data -> i32)
 std := import("std");
 print := std.io.print;
 
-main := (string[] args -> i32)
+main := func (string[] args -> i32)
 {
 	print(msg: "Hello World!\n");
 	return 0;

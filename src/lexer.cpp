@@ -275,18 +275,20 @@ Lexer::fetch_token(Token* tok)
 	}*/
 	else if(c == '\"')
 	{
+		tok->str.push_back(c); // '"'
 		c = fetch_char();
 		while(c != '\"')
 		{
 			tok->str.push_back(c);
 			if((c = fetch_char()) == '\0')
-			{
-				log_token_error(*tok, "Readed EOF before end of terminating quote!");
-			}
+				log_token_error(*tok, "Read EOF before end of terminating quote!");
+			
 		}
-
+		tok->str.push_back(c); // '"'
 		c = fetch_char(); //for prev_char to be set properly
-		//todo: implement escape parsing "\n \t \0" etc.
+
+		tok->cat = TokenCat::Immediate;
+		
 	}
 	else
 	{
