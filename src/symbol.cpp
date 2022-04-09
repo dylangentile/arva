@@ -17,5 +17,5 @@ SymbolTable::add_decl(AIR_SymbolDecl* decl)
 		return;
 	}
 
-	m_name_map.insert(std::make_pair(decl->name, decl->value));
+	m_name_map.insert({decl->name, decl->value});
 }

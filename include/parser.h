@@ -28,8 +28,13 @@ private:
 	void pop_scope();
 
 	Type parse_type();
+
 	AIR_Struct* parse_struct();
+	AIR_SymbolDecl* parse_decl();
+	AIR_Func* parse_function();
 	AIR_Node* parse_expression();
+
+	void parse_statement();
 
 	
 	

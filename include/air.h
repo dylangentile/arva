@@ -17,11 +17,13 @@ enum class AIR_Node_ID
 	BinaryExpr,
 	SymbolDecl,
 	SymbolRef,
+	Assign,
 	Immediate,
 	FuncCall,
 	Func,
 	Scope,
 	Struct,
+
 };
 
 
@@ -47,6 +49,7 @@ struct AIR_BinaryExpr : public AIR_Node
 	~AIR_BinaryExpr();
 };
 
+
 struct AIR_SymbolDecl : public AIR_Node
 {
 	std::string name;
@@ -63,6 +66,16 @@ struct AIR_SymbolRef : public AIR_Node
 
 	AIR_SymbolRef();
 	~AIR_SymbolRef();
+};
+
+struct AIR_Assign : public AIR_Node
+{
+	AIR_SymbolRef assignee;
+	AIR_Node* value;
+
+
+	AIR_Assign();
+	~AIR_Assign();
 };
 
 
@@ -89,11 +102,11 @@ struct AIR_Func : public AIR_Node
 
 	struct Arg
 	{
-		std::string name;
 		Type type;
+		std::string name;
 	};
 
-	std::vector<Arg*> arg_vec;
+	std::vector<Arg> arg_vec;
 	Type return_type;
 	
 	AIR_Scope* scope;
@@ -126,6 +139,9 @@ struct AIR_Struct : public AIR_Node
 		Type type;
 		std::string name;
 	};
+
+	void add_field(const Field&);
+
 
 	std::vector<Field> field_vec;
 	std::unordered_map<std::string, size_t> field_map; //indexes into field vec 

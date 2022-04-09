@@ -124,7 +124,7 @@ Parser::parse_struct()
 	fetch_token();
 
 	if(c_tok.type != TokenType::LCURLY)
-		log_token_error(c_tok, "expected '{' following struct keyword");
+		log_token_error(c_tok, "expected '{' following 'struct' keyword");
 
 	st->push_debug(c_tok.debug);
 	fetch_token();
@@ -135,7 +135,7 @@ Parser::parse_struct()
 		field.type = parse_type(); //fetches past end of type
 
 		if(c_tok.cat != TokenCat::Name)
-			log_token_error(c_tok, "expected field name in struct!");
+			log_token_error(c_tok, "expected field name in struct");
 
 		field.name = c_tok.str;
 		fetch_token();
@@ -143,7 +143,7 @@ Parser::parse_struct()
 		if(c_tok.type != TokenType::SEMICOLON)
 			log_token_error(c_tok, "expected ';'");
 
-		st->field_vec.push_back(field);
+		st->add_field(field);
 
 		fetch_token();
 	}
@@ -159,6 +159,88 @@ Parser::parse_struct()
 
 }
 
+AIR_SymbolDecl* 
+Parser::parse_decl()
+{
+	AIR_SymbolDecl* decl = new AIR_SymbolDecl;
+	decl->name = c_tok.str;
+	
+	decl->push_debug(c_tok.debug);
+	fetch_token();
+
+	if(c_tok.type != TokenType::DECL_EQUAL)
+		log_token_error(c_tok, "expected ':='");
+	
+	decl->push_debug(c_tok.debug);
+	fetch_token();
+
+	decl->value = parse_expression();
+
+	return decl;
+}
+
+AIR_Func*
+Parser::parse_function()
+{
+	AIR_Func* func = new AIR_Func;
+	func->push_debug(c_tok.debug);
+	fetch_token();
+
+
+	if(c_tok.type != TokenType::LPAREN)
+		log_token_error(c_tok, "expected '(' following 'func' keyword!");
+
+	func->push_debug(c_tok.debug);
+	fetch_token();
+
+
+	while(c_tok.type != TokenType::ARROW)
+	{
+		AIR_Func::Arg arg;
+		arg.type = parse_type(); //fetches past end of type
+
+		if(c_tok.cat != TokenCat::Name)
+			log_token_error(c_tok, "expected argument name in func");
+
+		fetch_token();
+
+		if(c_tok.type == TokenType::COMMA)
+			fetch_token();
+
+		func->arg_vec.push_back(arg);
+	}
+	fetch_token(); //consume arrow
+
+	func->return_type = parse_type();//fetches past end of type
+
+	if(c_tok.type != TokenType::RPAREN)
+		log_token_error(c_tok, "expected ')'");
+
+	fetch_token(); //consume rparen
+
+	if(c_tok.type != TokenType::LCURLY)
+		log_token_error(c_tok, "expected '{' to begin function body");
+	
+	fetch_token(); //consume lcurly
+
+	func->scope = new AIR_Scope;
+	push_scope(func->scope);
+		while(c_tok.type != TokenType::RCURLY)
+		{
+			parse_statement();
+			fetch_token();
+		}
+	pop_scope();
+
+	fetch_token(); //consume rcurly
+
+	if(c_tok.type != TokenType::SEMICOLON)
+		log_token_error(c_tok, "expected ';'");
+
+
+	return func;
+}
+
 
 AIR_Node*
 Parser::parse_expression()
@@ -172,7 +254,7 @@ Parser::parse_expression()
 			{
 				case TokenType::FUNC:
 				{
-
+					result = static_cast<AIR_Node*>(parse_function());
 				}
 				break;
 				case TokenType::STRUCT:
@@ -250,10 +332,71 @@ Parser::parse_expression()
 
 
 	if(result == nullptr)
-		log_token_error(c_tok, "failed to resolve expression!");
+		log_token_error(c_tok, "failed to parse expression!");
 
 	return result;
 }
+
+
+void
+Parser::parse_statement()
+{
+	switch(c_tok.cat)
+	{
+		case TokenCat::Name:
+		{
+
+			//could be a decl
+			if(lookahead()->type == TokenType::DECL_EQUAL)
+			{
+				c_scope->add_decl(parse_decl());
+				break;
+			}
+
+			//could be a type + name
+			//if(lookahead()-> == name) && lookahead(2) == assignment
+
+
+			if(lookahead()->type == TokenType::ASSIGN_EQUAL)
+			{
+				AIR_Assign* assign = new AIR_Assign;
+				assign->assignee.str = c_tok.str;
+				
+				assign->push_debug(c_tok.debug);
+				fetch_token(); //consume name
+
+				assign->push_debug(c_tok.debug);
+				fetch_token(); //consume assign equal
+
+				assign->value = parse_expression();
+
+				c_scope->node_vec.push_back(static_cast<AIR_Node*>(assign));
+			}	
+
+
+
+		}
+		break;
+		case TokenCat::Keyword:
+		{
+			//if(c_tok.type == TokenType::RETURN)
+			{
+
+			}
+		}
+		break;
+		case TokenCat::Type:
+		{
+
+		}
+		break;
+
+
+		default:
+		log_token_error(c_tok, "bad token in current scope");
+	}
+}
+
 
 
 AIR_Scope* 
@@ -271,27 +414,7 @@ Parser::parse()
 		{
 			case TokenCat::Name:
 			{
-				AIR_SymbolDecl* decl = new AIR_SymbolDecl;
-				decl->name = c_tok.str;
-				
-				decl->push_debug(c_tok.debug);
-				fetch_token();
-
-				if(c_tok.type != TokenType::DECL_EQUAL)
-				{
-					log_token_error(c_tok, "expected ':='");
-					break;
-				}
-
-				decl->push_debug(c_tok.debug);
-				fetch_token();
-
-				decl->value = parse_expression();
-
-				c_scope->add_decl(decl);
-
-
-
+				c_scope->add_decl(parse_decl());
 			}
 			break;
 
@@ -302,10 +425,7 @@ Parser::parse()
 			break;
 
 			default:
-			{
-				//log_token_error(c_tok, "bad token in global namespace!");
-			}
-			break;
+			log_token_error(c_tok, "bad token in global namespace!");
 		};
 	}
 

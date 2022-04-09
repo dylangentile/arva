@@ -25,6 +25,10 @@ AIR_SymbolRef::AIR_SymbolRef() : AIR_Node(AIR_Node_ID::SymbolRef) {}
 AIR_SymbolRef::~AIR_SymbolRef() {}
 
 
+AIR_Assign::AIR_Assign() : AIR_Node(AIR_Node_ID::Assign) {}
+AIR_Assign::~AIR_Assign() {}
+
+
 AIR_Immediate::AIR_Immediate() : AIR_Node(AIR_Node_ID::Immediate) {}
 AIR_Immediate::~AIR_Immediate() {}
 
@@ -40,17 +44,25 @@ AIR_Func::~AIR_Func() {}
 AIR_Scope::AIR_Scope() : AIR_Node(AIR_Node_ID::Scope) {}
 AIR_Scope::~AIR_Scope() {}
 
-
-AIR_Struct::AIR_Struct() : AIR_Node(AIR_Node_ID::Struct) {}
-AIR_Struct::~AIR_Struct() {}
-
-
 void
 AIR_Scope::add_decl(AIR_SymbolDecl* decl)
 {
 	node_vec.push_back(static_cast<AIR_Node*>(decl));
 	symbol_table.add_decl(decl);
 }
+
+
+AIR_Struct::AIR_Struct() : AIR_Node(AIR_Node_ID::Struct) {}
+AIR_Struct::~AIR_Struct() {}
+
+void
+AIR_Struct::add_field(const Field& f)
+{
+	const size_t idx = field_vec.size();
+	field_vec.push_back(f);
+	field_map.insert({f.name, idx});
+}
+
 
 
 std::string
