@@ -191,13 +191,20 @@ main(int argc, const char* argv[])
 	}
 
 
+	if(source_file_vec.empty())
+	{
+		fprintf(stderr, "Usage: %s source.arva\n", argv[0]);
+		return 1;
+	}
+
+
 
 
 
 	Error::initialize();
 
 	Parser parser;
-	parser.initialize(argv[1]);
+	parser.initialize(source_file_vec[0]);
 	AIR_Scope* air = parser.parse();
 	
 	

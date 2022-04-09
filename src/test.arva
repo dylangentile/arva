@@ -1,7 +1,7 @@
 
 x := y;
 w := "hello";
-
+x := 5;
 
 ab := struct
 {

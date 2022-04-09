@@ -6,7 +6,7 @@
 
 #include "type.h"
 #include "debug.h"
-
+#include "symbol.h"
 
 #include <vector>
 #include <string>
@@ -14,14 +14,13 @@
 
 enum class AIR_Node_ID
 {
-	Scope,
 	BinaryExpr,
 	SymbolDecl,
 	SymbolRef,
 	Immediate,
 	FuncCall,
 	Func,
-
+	Scope,
 };
 
 
@@ -31,19 +30,12 @@ struct AIR_Node
 	DebugGroup debug;
 
 
+	void push_debug(const DebugInfo&);
+
 	AIR_Node(const AIR_Node_ID id_);
 	~AIR_Node();
 };
 
-struct AIR_Scope : public AIR_Node
-{
-	std::vector<AIR_Node*> node_vec;
-	
-
-	
-	AIR_Scope();
-	~AIR_Scope();	
-};
 
 struct AIR_BinaryExpr : public AIR_Node
 {
@@ -90,6 +82,7 @@ struct AIR_FuncCall : public AIR_Node
 	~AIR_FuncCall();
 };
 
+struct AIR_Scope;
 struct AIR_Func : public AIR_Node
 {
 
@@ -100,12 +93,27 @@ struct AIR_Func : public AIR_Node
 	};
 
 	std::vector<Arg*> arg_vec;
-	std::vector<AIR_Node*> node_vec;
 	Type return_type;
+	
+	AIR_Scope* scope;
 
 
 	AIR_Func();
 	~AIR_Func();
+};
+
+
+struct AIR_Scope : public AIR_Node
+{
+	std::vector<AIR_Node*> node_vec;
+
+
+	void add_decl(AIR_SymbolDecl* decl);
+
+	SymbolTable symbol_table;
+	
+	AIR_Scope();
+	~AIR_Scope();	
 };
 
 

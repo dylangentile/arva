@@ -51,4 +51,6 @@ void dinfo_error_(ErrorType type, const DebugInfo& d, const char* msg, ...);
 #define log_token_error(tok, msg, ...) dinfo_error_(ErrorType::Error, (tok).debug, msg, ##__VA_ARGS__)
 #define log_token_warn(tok, msg, ...) dinfo_error_(ErrorType::Warning, (tok).debug, msg, ##__VA_ARGS__)
 
+#define log_air_error(node, msg, ...) dinfo_error_(ErrorType::Error, (node)->debug.concat(), msg, ##__VA_ARGS__);
+
 #pragma clang diagnostic pop

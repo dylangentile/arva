@@ -10,10 +10,13 @@ struct DebugInfo
 	uint32_t token_offset; //offset from start of line to token
 	uint32_t char_count;
 	uint32_t line_num;
+	bool multiline;
 };
 
 
 struct DebugGroup
 {
 	std::vector<DebugInfo> info_vec;
+
+	DebugInfo concat();
 };

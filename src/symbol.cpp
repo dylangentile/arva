@@ -1,65 +1,21 @@
 #include "symbol.h"
-/*#include "error.h"
-#include "lexer.h"
-#include <cassert>
-
-SymbolTable* SymbolTable::s = nullptr;
+#include "air.h"
+#include "error.h"
 
 SymbolTable::SymbolTable() {}
-SymbolTable::~SymbolTable() {}
+SymbolTable::~SymbolTable(){}
+
+
 
 
 void
-SymbolTable::init()
+SymbolTable::add_decl(AIR_SymbolDecl* decl)
 {
-	s = new SymbolTable();
-}
-
-void
-SymbolTable::destroy()
-{
-	delete s;
-}
-
-
-void
-SymbolTable::add_reference(SymbolReference ref)
-{
-	assert(s != nullptr && "SymbolTable uninitialized!");
-
-	auto finder = s->reference_map.find(ref.str);
-	if(finder == s->reference_map.end())
-		s->reference_map.insert(std::make_pair(ref.str, std::vector<SymbolReference>({ref})));
-	else
-		finder->second.push_back(ref);
-}
-
-void
-SymbolTable::add_struct_declaration(StructDecl decl)
-{
-	assert(s != nullptr && "SymbolTable uninitialized!");
-	
-	auto finder = s->decl_map.find(decl.s_name);
-	if(finder != s->decl_map.end())
-		dinfo_error(ErrorType::Error, decl.debug, "Symbol is already in use!");
-	else
+	if(m_name_map.find(decl->name) != m_name_map.end())
 	{
-		s->struct_vec.push_back(decl);
-		StructDecl* ptr = s->struct_vec.data() + (s->struct_vec.size() - 1);
-
-		SymbolDeclaration sym_decl;
-		sym_decl.type = SymbolType::Structure;
-		sym_decl.ptr = ptr;
-
-		s->decl_map.insert(std::make_pair(decl.s_name, sym_decl));
+		log_air_error(decl, "redeclaration of symbol already declared in current scope!");
+		return;
 	}
-	
 
+	m_name_map.insert(std::make_pair(decl->name, decl->value));
 }
-
-void
-SymbolTable::resolve_references()
-{
-	
-}
-*/

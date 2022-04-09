@@ -126,7 +126,10 @@ Parser::parse_expression()
 				
 				AIR_SymbolRef* ref = new AIR_SymbolRef;
 				ref->str = c_tok.str;
+
+				ref->push_debug(c_tok.debug);
 				fetch_token(); //consume current token, now on semicolon
+				ref->push_debug(c_tok.debug);
 
 				result = static_cast<AIR_Node*>(ref);
 				break;
@@ -140,7 +143,10 @@ Parser::parse_expression()
 			{
 				AIR_Immediate* immediate = new AIR_Immediate;
 				immediate->str = c_tok.str;
+
+				immediate->push_debug(c_tok.debug);
 				fetch_token(); //consume current token, now on semicolon
+				immediate->push_debug(c_tok.debug);
 
 				result = static_cast<AIR_Node*>(immediate);
 				break;
@@ -171,8 +177,6 @@ Parser::parse()
 	AIR_Scope* global_scope = new AIR_Scope;
 	push_scope(global_scope);
 
-	std::vector<AIR_Node*>& decl_vec = global_scope->node_vec;
-
 	while(working)
 	{
 		fetch_token();
@@ -182,7 +186,8 @@ Parser::parse()
 			{
 				AIR_SymbolDecl* decl = new AIR_SymbolDecl;
 				decl->name = c_tok.str;
-
+				
+				decl->push_debug(c_tok.debug);
 				fetch_token();
 
 				if(c_tok.type != TokenType::DECL_EQUAL)
@@ -191,13 +196,12 @@ Parser::parse()
 					break;
 				}
 
-
+				decl->push_debug(c_tok.debug);
 				fetch_token();
 
 				decl->value = parse_expression();
 
-				decl_vec.push_back(decl);
-
+				c_scope->add_decl(decl);
 
 
 
@@ -218,6 +222,8 @@ Parser::parse()
 		};
 	}
 
+	if(c_scope != global_scope)
+		Error::str_error(ErrorType::Fatal, "bad scope stack management in parser!");
+
 	return global_scope;
-	
 }

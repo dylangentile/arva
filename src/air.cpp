@@ -6,8 +6,11 @@ AIR_Node::AIR_Node(const AIR_Node_ID id_) : id(id_) {}
 AIR_Node::~AIR_Node() {}
 
 
-AIR_Scope::AIR_Scope() : AIR_Node(AIR_Node_ID::Scope) {}
-AIR_Scope::~AIR_Scope() {}
+void
+AIR_Node::push_debug(const DebugInfo& d)
+{
+	debug.info_vec.push_back(d);
+}
 
 
 AIR_BinaryExpr::AIR_BinaryExpr() : AIR_Node(AIR_Node_ID::BinaryExpr) {}
@@ -34,15 +37,26 @@ AIR_Func::AIR_Func() : AIR_Node(AIR_Node_ID::Func) {}
 AIR_Func::~AIR_Func() {}
 
 
+AIR_Scope::AIR_Scope() : AIR_Node(AIR_Node_ID::Scope) {}
+AIR_Scope::~AIR_Scope() {}
+
+
+void
+AIR_Scope::add_decl(AIR_SymbolDecl* decl)
+{
+	node_vec.push_back(static_cast<AIR_Node*>(decl));
+	symbol_table.add_decl(decl);
+}
+
+
 std::string
 print_air_node(const AIR_Node* n, bool print_ids)
 {
 	std::string str = "";
 
 	if(!n)
-	{
 		return "!NullNode!";
-	}
+	
 
 	switch(n->id)
 	{

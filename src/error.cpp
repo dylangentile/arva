@@ -102,7 +102,6 @@ Error::report()
 void 
 dinfo_error_(ErrorType type, const DebugInfo& d, const char* msg, ...)
 {
-
 	va_list args1, args2;
 	va_start(args1, msg);
 	va_copy(args2, args1);
@@ -112,6 +111,18 @@ dinfo_error_(ErrorType type, const DebugInfo& d, const char* msg, ...)
 	vsnprintf(buf, s, msg, args2);
 	
 	va_end(args2);
+
+	const char* fmt_str = "\033[1m%s:%u:\033[91m %s\033[0m\n\t\t%s\n";
+
+
+	if(!d.file_path)
+	{
+		Error::strf_error(type, "error func passed bad DebugInfo with message: %s\n", msg);
+
+
+		return;
+	}
+
 
 	const size_t l_buf_size = 80 - 8; //space left after two tabs;
 	char l_buf[80 - 8];
@@ -127,7 +138,7 @@ dinfo_error_(ErrorType type, const DebugInfo& d, const char* msg, ...)
 	}
 	*l_ptr = '\0';
 
-	const char* fmt_str = "\033[1m%s:%u:\033[91m %s\033[0m\n\t\t%s\n";
+	
 
 
 	std::vector<char> msg_vec;
@@ -155,3 +166,5 @@ dinfo_error_(ErrorType type, const DebugInfo& d, const char* msg, ...)
 	free(buf);
 
 }
+
+
