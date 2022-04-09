@@ -30,6 +30,15 @@ Parser::terminate()
 Token*
 Parser::fetch_token()
 {	
+	
+	if(c_tok.cat == TokenCat::FileEnd)
+	{
+		log_token_error(c_tok, "fetched token past end of file!");
+		Error::report();
+		exit(1);
+	}
+	
+
 	if(m_lookahead_queue.empty())
 	{
 		m_lexer->fetch_token(&c_tok);
@@ -39,6 +48,7 @@ Parser::fetch_token()
 		c_tok = m_lookahead_queue.front();
 		m_lookahead_queue.pop_front();
 	}
+
 
 	
 	return &c_tok;
@@ -184,14 +194,14 @@ Parser::parse_function()
 {
 	AIR_Func* func = new AIR_Func;
 	func->push_debug(c_tok.debug);
-	fetch_token();
+	fetch_token(); //consumes func token
 
 
 	if(c_tok.type != TokenType::LPAREN)
 		log_token_error(c_tok, "expected '(' following 'func' keyword!");
 
 	func->push_debug(c_tok.debug);
-	fetch_token();
+	fetch_token(); //consume lparen
 
 
 	while(c_tok.type != TokenType::ARROW)
@@ -202,7 +212,9 @@ Parser::parse_function()
 		if(c_tok.cat != TokenCat::Name)
 			log_token_error(c_tok, "expected argument name in func");
 
-		fetch_token();
+		arg.name = c_tok.str;
+
+		fetch_token();//consume name
 
 		if(c_tok.type == TokenType::COMMA)
 			fetch_token();
@@ -236,7 +248,7 @@ Parser::parse_function()
 
 	if(c_tok.type != TokenType::SEMICOLON)
 		log_token_error(c_tok, "expected ';'");
-
+ 
 
 	return func;
 }

@@ -103,7 +103,7 @@ cmd_parse_args(int argc, const char* argv[], std::vector<const char*>& file_vec)
 					{
 						if(i + 1 >= argc)
 						{
-							fprintf(stderr, "Missing value for key: %s", arg);
+							fprintf(stderr, "Missing value for key: %s\n", cmd.key);
 							exit(1);
 						}
 
@@ -116,7 +116,7 @@ cmd_parse_args(int argc, const char* argv[], std::vector<const char*>& file_vec)
 					{
 						if(strlen(arg) <= cmd_len)
 						{
-							fprintf(stderr, "sanity check error! bad arg? %s", arg);
+							fprintf(stderr, "sanity check error! bad arg? %s\n", cmd.key);
 							exit(1);
 						}
 						opt_vec.push_back({cmd.id, arg + cmd_len});

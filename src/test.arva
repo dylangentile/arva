@@ -1,11 +1,13 @@
-x := y;
 w := "hello";
+x := y;
 
 ab := struct
 {
 	i32 a;
 	i32 b;
 };
+
+
 
 
 multiply := func (ab data -> i32)

@@ -3,6 +3,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cassert>
+#include <cstring>
 
 Error* Error::g_error = nullptr;
 
@@ -153,11 +154,15 @@ dinfo_error_(ErrorType type, const DebugInfo& d, const char* msg, ...)
 	msg_vec.push_back('\t');
 	msg_vec.push_back('\t');
 	
-	for(size_t i = 0; i < d.token_offset - 1; i++)
-		msg_vec.push_back(' ');
-	msg_vec.push_back('^');
-	for(size_t i = 0; i < d.char_count - 1; i++)
-		msg_vec.push_back('~');
+	if(d.char_count > 0 && d.token_offset > 0)
+	{
+
+		for(size_t i = 0; i < d.token_offset - 1; i++)
+			msg_vec.push_back(' ');
+		msg_vec.push_back('^');
+		for(size_t i = 0; i < d.char_count - 1; i++)
+			msg_vec.push_back('~');
+	}
 
 	msg_vec.push_back('\n');
 	msg_vec.push_back('\0');
