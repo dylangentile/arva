@@ -41,6 +41,10 @@ AIR_Scope::AIR_Scope() : AIR_Node(AIR_Node_ID::Scope) {}
 AIR_Scope::~AIR_Scope() {}
 
 
+AIR_Struct::AIR_Struct() : AIR_Node(AIR_Node_ID::Struct) {}
+AIR_Struct::~AIR_Struct() {}
+
+
 void
 AIR_Scope::add_decl(AIR_SymbolDecl* decl)
 {
@@ -97,10 +101,36 @@ print_air_node(const AIR_Node* n, bool print_ids)
 				str += "#FuncCall ";
 			str += fc->name + "(";
 
+			if(fc->arg_vec.empty())
+			{
+				str += ")";
+				break;
+			}
+
 			const AIR_Node* const * arg = fc->arg_vec.data();
 			for(; arg != fc->arg_vec.data() + fc->arg_vec.size() - 1; arg++)
 				str += print_air_node(*arg, print_ids) + ", ";
 			str += print_air_node(*arg, print_ids) + ")";
+		}
+		break;
+		case AIR_Node_ID::Struct:
+		{
+			const AIR_Struct* st = static_cast<const AIR_Struct*>(n);
+			if(print_ids)
+				str += "#Struct ";
+
+			str += "{";
+
+			if(st->field_vec.empty())
+			{
+				str += "}";
+				break;
+			}
+
+			const AIR_Struct::Field* f = st->field_vec.data();
+			for(; f != st->field_vec.data() + st->field_vec.size() - 1; f++)
+				str += f->type.print() + " " + f->name + ", ";
+			str += f->type.print() + " " + f->name + "}";
 		}
 		break;
 

@@ -21,6 +21,7 @@ enum class AIR_Node_ID
 	FuncCall,
 	Func,
 	Scope,
+	Struct,
 };
 
 
@@ -106,15 +107,35 @@ struct AIR_Func : public AIR_Node
 struct AIR_Scope : public AIR_Node
 {
 	std::vector<AIR_Node*> node_vec;
-
+	SymbolTable symbol_table;
+	AIR_Scope* parent;
 
 	void add_decl(AIR_SymbolDecl* decl);
 
-	SymbolTable symbol_table;
+	
 	
 	AIR_Scope();
 	~AIR_Scope();	
 };
+
+
+struct AIR_Struct : public AIR_Node
+{
+	struct Field
+	{
+		Type type;
+		std::string name;
+	};
+
+	std::vector<Field> field_vec;
+	std::unordered_map<std::string, size_t> field_map; //indexes into field vec 
+
+
+	AIR_Struct();
+	~AIR_Struct();
+
+};
+
 
 
 

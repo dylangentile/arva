@@ -61,6 +61,7 @@ Parser::lookahead(uint8_t i)
 void
 Parser::push_scope(AIR_Scope* s)
 {
+	s->parent = c_scope;
 	m_scope_stack.push(s);
 	c_scope = s;
 }
@@ -70,6 +71,92 @@ Parser::pop_scope()
 {
 	m_scope_stack.pop();
 	c_scope = m_scope_stack.top();
+}
+
+Type
+Parser::parse_type()
+{
+	Type ret;
+	switch(c_tok.cat)
+	{
+		case TokenCat::Type:
+		{
+			ret.access = TypeAccess::Mutable; //there were no qualifiers!
+			ret.storage = TypeStorage::Value; //default for now
+
+			ret.cat = TypeCategory::Raw;
+			ret.raw = token_type_to_raw_type(c_tok.type);
+
+			fetch_token();
+		}
+		break;
+		case TokenCat::Name:
+		{
+			ret.access = TypeAccess::Mutable; //there were no qualifiers!
+			ret.storage = TypeStorage::Value; //default for now
+
+			ret.cat = TypeCategory::Symbol;
+			ret.symbol = c_tok.str;
+
+			fetch_token();
+		}
+		break;
+		case TokenCat::Keyword:
+		{
+			//todo
+			log_token_error(c_tok, "type keywords unimplemented!");
+		}
+		//break;
+		default:
+		log_token_error(c_tok, "expected a type!");
+		break;
+	}
+
+	return ret;
+}
+
+
+AIR_Struct*
+Parser::parse_struct()
+{
+	AIR_Struct* st = new AIR_Struct;
+	st->push_debug(c_tok.debug);
+	fetch_token();
+
+	if(c_tok.type != TokenType::LCURLY)
+		log_token_error(c_tok, "expected '{' following struct keyword");
+
+	st->push_debug(c_tok.debug);
+	fetch_token();
+
+	while(c_tok.type != TokenType::RCURLY)
+	{
+		AIR_Struct::Field field;
+		field.type = parse_type(); //fetches past end of type
+
+		if(c_tok.cat != TokenCat::Name)
+			log_token_error(c_tok, "expected field name in struct!");
+
+		field.name = c_tok.str;
+		fetch_token();
+
+		if(c_tok.type != TokenType::SEMICOLON)
+			log_token_error(c_tok, "expected ';'");
+
+		st->field_vec.push_back(field);
+
+		fetch_token();
+	}
+
+	fetch_token();
+
+	if(c_tok.type != TokenType::SEMICOLON)
+		log_token_error(c_tok, "expected ';'");
+
+	st->push_debug(c_tok.debug);
+
+	return st;
+
 }
 
 
@@ -90,7 +177,7 @@ Parser::parse_expression()
 				break;
 				case TokenType::STRUCT:
 				{
-
+					result = static_cast<AIR_Node*>(parse_struct());
 				}
 				break;
 				case TokenType::CLASS:

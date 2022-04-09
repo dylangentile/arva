@@ -27,7 +27,8 @@ private:
 	void push_scope(AIR_Scope*);
 	void pop_scope();
 
-
+	Type parse_type();
+	AIR_Struct* parse_struct();
 	AIR_Node* parse_expression();
 
 	

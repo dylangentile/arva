@@ -54,8 +54,13 @@ struct Type
 	};
 
 
+	std::string print() const;
+
 	Type();
 	~Type();
+
+	Type(const Type& other);
+	Type& operator=(const Type& other);
 
 
 };
