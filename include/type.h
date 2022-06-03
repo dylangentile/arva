@@ -47,11 +47,10 @@ struct Type
 	TypeStorage storage;
 
 	TypeCategory cat;
-	union
-	{
-			RawTypeEnum raw;
-			std::string symbol;
-	};
+
+	RawTypeEnum raw;
+	std::string symbol;
+	
 
 
 	std::string print() const;

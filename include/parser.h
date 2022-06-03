@@ -33,6 +33,7 @@ private:
 	AIR_SymbolDecl* parse_decl();
 	AIR_Func* parse_function();
 	AIR_Node* parse_expression();
+	AIR_Node* parse_bin_expr();
 
 	void parse_statement();
 

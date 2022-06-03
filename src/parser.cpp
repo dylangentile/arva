@@ -254,6 +254,83 @@ Parser::parse_function()
 	return func;
 }
 
+AIR_Node* 
+Parser::parse_bin_expr()
+{
+	std::stack<AIR_BinaryExpr::OperatorID> op_stack;
+	std::stack<AIR_Node*> output_stack;
+
+	while(c_tok.type != TokenType::COMMA && c_tok.type != TokenType::SEMICOLON && c_tok.type != TokenType::RPAREN)
+	{
+		//messy/weird control flow -- might be better to put it into the switch/operators section....
+		if(c_tok.type == TokenType::LPAREN)
+		{
+			fetch_token();
+			output_stack.push(parse_bin_expr());
+			fetch_token(); //consume RPAREN
+			continue;
+		}
+
+		switch(c_tok.cat)
+		{
+
+			case TokenCat::Operator:
+			{
+				op_stack.push((AIR_BinaryExpr::OperatorID)c_tok.type);
+			}
+			break;
+			case TokenCat::Immediate:
+			{
+				AIR_Immediate* immediate = new AIR_Immediate();
+				immediate->str = c_tok.str;
+				output_stack.push(static_cast<AIR_Node*>(immediate));
+			}
+			break;
+			case TokenCat::Name:
+			{
+				if(lookahead()->type == TokenType::LPAREN)//function call
+				{
+					AIR_FuncCall* fcall = new AIR_FuncCall();
+					fcall->name = c_tok.str;
+
+					fetch_token(); //consume (
+					fetch_token();
+
+					while(c_tok.type != TokenType::RPAREN)
+					{
+						fcall->arg_vec.push_back(
+							static_cast<AIR_Node*>(parse_bin_expr(/*stop_on_comma = true*/))
+							//stop on rparen?
+						);
+
+						if(c_tok.type != TokenType::COMMA)
+							log_token_error(c_tok, "expected comma!");
+						fetch_token();
+					}
+
+					output_stack.push(static_cast<AIR_Node*>(fcall));
+				}
+				else //symbolref
+				{
+					AIR_SymbolRef* symbol = new AIR_SymbolRef();
+					symbol->str = c_tok.str;
+					output_stack.push(static_cast<AIR_Node*>(symbol));
+				}
+			}
+			break;
+			default:
+			log_token_error(c_tok, "unexpected token in binary expression!");
+		}
+
+		fetch_token();
+	}
+
+	
+
+
+	return output_stack.top();
+}
+
 
 AIR_Node*
 Parser::parse_expression()
@@ -303,49 +380,11 @@ Parser::parse_expression()
 		case TokenCat::Name:
 		case TokenCat::Immediate:
 		{
-			std::stack<OperatorID> operator_stack,
-			std::stack<AIR_Node*> output_stack;
 
-			
-			while(c_tok.type != TokenType::SEMICOLON && c_tok.type != TokenType::COMMA)
-			{
-
-				if(c_tok.cat == TokenCat::Name)
-				{
-					if(lookahead().type == TokenType::LPAREN)
-					{
-						AIR_Node* n = parse_function_call();
-						output_stack.push(n);
-					}
-					else
-					{
-						AIR_SymbolRef* sref = new AIR_SymbolRef;
-						sref->str = c_tok.str;
-						output_stack.push(static_cast<AIR_Node*>(sref));
-					}
-				}
-				else if(c_tok.cat == TokenCat::Immediate)
-				{
-					AIR_Node* n = parse_immediate();
-					output_stack.push(n);
-				}
-				else if(c_tok.cat == TokenCat::Operator)
-				{
-					operator_stack.push()
-				}
-
-
-				fetch_token();
-			}
-
-
-
+			result = parse_bin_expr();
 		}
 		break;
-
-
-		/*case TokenCat::Name:
-		{
+		/*{
 			if(lookahead()->type == TokenType::SEMICOLON)
 			{
 				
@@ -362,7 +401,7 @@ Parser::parse_expression()
 		}
 		break;
 
-		case TokenCat::Immediate:
+		
 		{
 			if(lookahead()->type == TokenType::SEMICOLON)
 			{

@@ -23,6 +23,7 @@ enum class AIR_Node_ID
 	Func,
 	Scope,
 	Struct,
+	Member,
 
 };
 
@@ -42,7 +43,35 @@ struct AIR_Node
 
 struct AIR_BinaryExpr : public AIR_Node
 {
+	enum class OperatorID
+	{
+		PLUS,
+		MINUS,
+		MULTIPLY,
+		DIVIDE,
+		MODULO,
 
+		//logic
+		EQUALITY = (uint16_t)TokenType::EQUALITY - (uint16_t)TokenType::PLUS,
+		NOT_EQUALITY,
+		LOGICAL_AND,
+		LOGICAL_OR,
+		LOGIC_NOT,
+
+		LESS_THAN,
+		GREATER_THAN,
+		LESS_EQUAL,
+		GRATER_EQUAL,
+
+		//bitwise
+		BIT_AND,
+		BIT_OR,
+		BIT_COMPL,
+	};
+
+	OperatorID op;
+	AIR_Node* lhs;
+	AIR_Node* rhs;
 
 
 	AIR_BinaryExpr();
@@ -150,6 +179,16 @@ struct AIR_Struct : public AIR_Node
 	AIR_Struct();
 	~AIR_Struct();
 
+};
+
+struct AIR_Member : public AIR_Node
+{
+	AIR_Node* parent; //member of this thing
+	std::string field_name;
+
+
+	AIR_Member();
+	~AIR_Member();
 };
 
 
