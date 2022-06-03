@@ -55,6 +55,10 @@ AIR_Scope::add_decl(AIR_SymbolDecl* decl)
 AIR_Struct::AIR_Struct() : AIR_Node(AIR_Node_ID::Struct) {}
 AIR_Struct::~AIR_Struct() {}
 
+
+AIR_Member::AIR_Member() : AIR_Node(AIR_Node_ID::Member) {}
+AIR_Member::~AIR_Member() {}
+
 void
 AIR_Struct::add_field(const Field& f)
 {
