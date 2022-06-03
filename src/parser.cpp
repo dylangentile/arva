@@ -3,6 +3,7 @@
 #include "error.h"
 
 #include <cstdio>
+#include <stack>
 
 Parser::Parser() 
 {
@@ -299,8 +300,51 @@ Parser::parse_expression()
 		}
 		break;
 
-
 		case TokenCat::Name:
+		case TokenCat::Immediate:
+		{
+			std::stack<OperatorID> operator_stack,
+			std::stack<AIR_Node*> output_stack;
+
+			
+			while(c_tok.type != TokenType::SEMICOLON && c_tok.type != TokenType::COMMA)
+			{
+
+				if(c_tok.cat == TokenCat::Name)
+				{
+					if(lookahead().type == TokenType::LPAREN)
+					{
+						AIR_Node* n = parse_function_call();
+						output_stack.push(n);
+					}
+					else
+					{
+						AIR_SymbolRef* sref = new AIR_SymbolRef;
+						sref->str = c_tok.str;
+						output_stack.push(static_cast<AIR_Node*>(sref));
+					}
+				}
+				else if(c_tok.cat == TokenCat::Immediate)
+				{
+					AIR_Node* n = parse_immediate();
+					output_stack.push(n);
+				}
+				else if(c_tok.cat == TokenCat::Operator)
+				{
+					operator_stack.push()
+				}
+
+
+				fetch_token();
+			}
+
+
+
+		}
+		break;
+
+
+		/*case TokenCat::Name:
 		{
 			if(lookahead()->type == TokenType::SEMICOLON)
 			{
@@ -333,7 +377,7 @@ Parser::parse_expression()
 				break;
 			}
 		}
-		break;
+		break;*/
 
 		default:
 		{
