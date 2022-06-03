@@ -56,17 +56,27 @@ struct AIR_BinaryExpr : public AIR_Node
 		NOT_EQUALITY,
 		LOGICAL_AND,
 		LOGICAL_OR,
-		LOGIC_NOT,
+		LOGICAL_NOT,
 
 		LESS_THAN,
 		GREATER_THAN,
 		LESS_EQUAL,
-		GRATER_EQUAL,
+		GREATER_EQUAL,
 
 		//bitwise
 		BIT_AND,
 		BIT_OR,
 		BIT_COMPL,
+
+		
+		//these don't match w/tokentypes
+		UNARY_NEGATIVE,
+		UNARY_ADDR,
+
+		//these are just for the op stack, and for precedence
+		LPAREN,
+		RPAREN,
+
 	};
 
 	OperatorID op;

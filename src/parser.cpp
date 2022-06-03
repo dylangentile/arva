@@ -3,6 +3,7 @@
 #include "error.h"
 
 #include <cstdio>
+#include <map>
 #include <stack>
 
 Parser::Parser() 
@@ -257,18 +258,96 @@ Parser::parse_function()
 AIR_Node* 
 Parser::parse_bin_expr()
 {
+	std::map<AIR_BinaryExpr::OperatorID, int32_t> precedence_map = 
+	{
+		{AIR_BinaryExpr::OperatorID::PLUS, 11},
+		{AIR_BinaryExpr::OperatorID::MINUS, 11},
+		{AIR_BinaryExpr::OperatorID::MULTIPLY, 12},
+		{AIR_BinaryExpr::OperatorID::DIVIDE, 12},
+		{AIR_BinaryExpr::OperatorID::MODULO, 12},
+		
+		{AIR_BinaryExpr::OperatorID::EQUALITY, 8},
+		{AIR_BinaryExpr::OperatorID::NOT_EQUALITY, 8},
+		{AIR_BinaryExpr::OperatorID::LOGICAL_AND, 4},
+		{AIR_BinaryExpr::OperatorID::LOGICAL_OR, 3},
+		{AIR_BinaryExpr::OperatorID::LOGICAL_NOT, 13},
+		{AIR_BinaryExpr::OperatorID::LESS_THAN, 9},
+		{AIR_BinaryExpr::OperatorID::GREATER_THAN, 9},
+		{AIR_BinaryExpr::OperatorID::LESS_EQUAL, 9},
+		{AIR_BinaryExpr::OperatorID::GREATER_EQUAL, 9},
+
+		{AIR_BinaryExpr::OperatorID::BIT_AND, 7},
+		{AIR_BinaryExpr::OperatorID::BIT_OR, 5},
+		{AIR_BinaryExpr::OperatorID::BIT_COMPL, 13},
+
+		{AIR_BinaryExpr::OperatorID::UNARY_NEGATIVE, 13},
+		{AIR_BinaryExpr::OperatorID::UNARY_ADDR, 13},
+
+		{AIR_BinaryExpr::OperatorID::LPAREN, 14},
+		{AIR_BinaryExpr::OperatorID::RPAREN, 14},
+	};
+	
+
 	std::stack<AIR_BinaryExpr::OperatorID> op_stack;
 	std::stack<AIR_Node*> output_stack;
 
-	while(c_tok.type != TokenType::COMMA && c_tok.type != TokenType::SEMICOLON && c_tok.type != TokenType::RPAREN)
+
+	int32_t paren_count = 0;
+	TokenCat prev_cat = TokenCat::NULLCAT;
+
+	while(c_tok.type != TokenType::COMMA && c_tok.type != TokenType::SEMICOLON)
 	{
 		//messy/weird control flow -- might be better to put it into the switch/operators section....
 		if(c_tok.type == TokenType::LPAREN)
 		{
+			
+			op_stack.push(AIR_BinaryExpr::OperatorID::LPAREN);
+
 			fetch_token();
-			output_stack.push(parse_bin_expr());
-			fetch_token(); //consume RPAREN
+			paren_count++;
+			prev_cat = c_tok.cat;
 			continue;
+		}
+
+		if(c_tok.type == TokenType::RPAREN)
+		{
+			if(paren_count == 0) //stop
+				break;
+
+			if(op_stack.empty())
+					log_token_fatal(c_tok, "mismatched parentheses!");
+			AIR_BinaryExpr::OperatorID op = op_stack.top();
+			op_stack.pop();
+			
+			while(op != AIR_BinaryExpr::OperatorID::LPAREN)
+			{
+				//code duplication!!!! 			
+				if(output_stack.size() < 2)
+					log_token_fatal(c_tok, "invalid pairing of operators and symbols!" /*this is a horrible error message*/);
+
+				AIR_Node* a = output_stack.top();
+				output_stack.pop();
+				AIR_Node* b = output_stack.top();
+				output_stack.pop();
+
+				AIR_BinaryExpr* bin_expr = new AIR_BinaryExpr();
+				bin_expr->op = op;
+				bin_expr->lhs = b;
+				bin_expr->rhs = a;
+
+				output_stack.push(bin_expr);
+
+				if(op_stack.empty())
+					log_token_fatal(c_tok, "mismatched parentheses!");
+
+				op = op_stack.top();
+				op_stack.pop();
+			};
+			
+
+			fetch_token();
+			paren_count--;
+			prev_cat = TokenCat::Name;
 		}
 
 		switch(c_tok.cat)
@@ -276,7 +355,38 @@ Parser::parse_bin_expr()
 
 			case TokenCat::Operator:
 			{
-				op_stack.push((AIR_BinaryExpr::OperatorID)c_tok.type);
+				AIR_BinaryExpr::OperatorID op = (AIR_BinaryExpr::OperatorID)c_tok.type;
+				if(prev_cat == TokenCat::Operator)
+				{
+					if(c_tok.type == TokenType::MINUS)
+						op = AIR_BinaryExpr::OperatorID::UNARY_NEGATIVE;
+					else if(c_tok.type == TokenType::BIT_AND)
+						op = AIR_BinaryExpr::OperatorID::UNARY_ADDR;
+				}
+
+				while(!op_stack.empty() && precedence_map[op_stack.top()] > precedence_map[op]) //todo account for associativity
+				{
+					AIR_BinaryExpr::OperatorID op_other = op_stack.top();
+					op_stack.pop();
+
+					if(output_stack.size() < 2)
+						log_token_fatal(c_tok, "invalid pairing of operators and symbols!" /*this is a horrible error message*/);
+
+					AIR_Node* a = output_stack.top();
+					output_stack.pop();
+					AIR_Node* b = output_stack.top();
+					output_stack.pop();
+
+					AIR_BinaryExpr* bin_expr = new AIR_BinaryExpr();
+					bin_expr->op = op_other;
+					bin_expr->lhs = b;
+					bin_expr->rhs = a;
+
+					output_stack.push(bin_expr);
+				}
+
+				op_stack.push(op);
+				prev_cat = c_tok.cat;
 			}
 			break;
 			case TokenCat::Immediate:
@@ -284,6 +394,8 @@ Parser::parse_bin_expr()
 				AIR_Immediate* immediate = new AIR_Immediate();
 				immediate->str = c_tok.str;
 				output_stack.push(static_cast<AIR_Node*>(immediate));
+
+				prev_cat = c_tok.cat;
 			}
 			break;
 			case TokenCat::Name:
@@ -299,7 +411,7 @@ Parser::parse_bin_expr()
 					while(c_tok.type != TokenType::RPAREN)
 					{
 						fcall->arg_vec.push_back(
-							static_cast<AIR_Node*>(parse_bin_expr(/*stop_on_comma = true*/))
+							static_cast<AIR_Node*>(parse_bin_expr(/*stop_on_rparen = true*/))
 							//stop on rparen?
 						);
 
@@ -309,12 +421,16 @@ Parser::parse_bin_expr()
 					}
 
 					output_stack.push(static_cast<AIR_Node*>(fcall));
+
+					prev_cat = TokenCat::Name;
 				}
 				else //symbolref
 				{
 					AIR_SymbolRef* symbol = new AIR_SymbolRef();
 					symbol->str = c_tok.str;
 					output_stack.push(static_cast<AIR_Node*>(symbol));
+
+					prev_cat = c_tok.cat;
 				}
 			}
 			break;
@@ -322,11 +438,32 @@ Parser::parse_bin_expr()
 			log_token_error(c_tok, "unexpected token in binary expression!");
 		}
 
+
+
 		fetch_token();
 	}
 
-	
+	//more code dupe, perhaps a lambda?
+	while(!op_stack.empty())
+	{
+		AIR_BinaryExpr::OperatorID op_other = op_stack.top();
+		op_stack.pop();
 
+		if(output_stack.size() < 2)
+			log_token_fatal(c_tok, "invalid pairing of operators and symbols!" /*this is a horrible error message*/);
+
+		AIR_Node* a = output_stack.top();
+		output_stack.pop();
+		AIR_Node* b = output_stack.top();
+		output_stack.pop();
+
+		AIR_BinaryExpr* bin_expr = new AIR_BinaryExpr();
+		bin_expr->op = op_other;
+		bin_expr->lhs = b;
+		bin_expr->rhs = a;
+
+		output_stack.push(bin_expr);
+	}
 
 	return output_stack.top();
 }

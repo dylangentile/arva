@@ -93,7 +93,7 @@ enum class TokenType : uint16_t
 	LESS_THAN,
 	GREATER_THAN,
 	LESS_EQUAL,
-	GRATER_EQUAL,
+	GREATER_EQUAL,
 
 	//bitwise
 	BIT_AND,
