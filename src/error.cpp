@@ -96,8 +96,20 @@ Error::report()
 	if(g_error->warning_count == 0 && g_error->error_count == 0)
 		return;
 
-	printf("WARNINGS:\n%s\n\nERRORS:\n%s\narvac exited with %u warnings and %u errors.\n",
-		g_error->warning_str.c_str(), g_error->error_str.c_str(), g_error->warning_count, g_error->error_count);
+	printf("%s%s", g_error->warning_str.c_str(), g_error->error_str.c_str());
+
+	const char* plural_warn = g_error->warning_count > 1 ? "warnings" : "warning";
+	const char* plural_error = g_error->error_count > 1 ? "errors" : "error";
+
+
+	if(g_error->warning_count && g_error->error_count)
+		printf("%u %s and %u %s generated.\n", g_error->error_count, plural_error, g_error->warning_count, plural_warn);
+	else if(g_error->warning_count)
+		printf("%u %s generated.\n", g_error->warning_count, plural_warn);
+	else if(g_error->error_count)
+		printf("%u %s generated.\n", g_error->error_count, plural_error);
+	
+
 }
 
 void 
@@ -113,7 +125,9 @@ dinfo_error_(ErrorType type, const DebugInfo& d, const char* msg, ...)
 	
 	va_end(args2);
 
-	const char* fmt_str = "\033[1m%s:%u:\033[91m %s\033[0m\n\t\t%s\n";
+	const char* fmt_str = type == ErrorType::Warning ? 
+			"\033[1m%s:%u:\033[95m %s\033[0m\033[1m [warning]\033[0m\n\t\t%s\n":
+			"\033[1m%s:%u:\033[91m %s\033[0m\033[1m [error]\033[0m\n\t\t%s\n";
 
 
 	if(!d.file_path)

@@ -1,6 +1,6 @@
-w := "hello";
+/*w := "hello";
 x := y;
-
+*/
 ab := struct
 {
 	i32 a;
@@ -13,6 +13,16 @@ ab := struct
 multiply := func (ab data -> i32)
 {
 	return data.a * data.b;
+};
+
+main := func(i32 x -> i32)
+{
+	ab other_data;
+	other_data.a = 59;
+	other_data.b = 72;
+
+	i32 result = multiply(other_data);
+	return 0;
 };
 
 /*

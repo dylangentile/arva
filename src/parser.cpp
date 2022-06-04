@@ -152,18 +152,25 @@ Parser::parse_struct()
 		field.name = c_tok.str;
 		fetch_token();
 
-		if(c_tok.type != TokenType::SEMICOLON)
-			log_token_error(c_tok, "expected ';'");
 
 		st->add_field(field);
+
+		if(c_tok.type != TokenType::SEMICOLON)
+		{
+			log_token_error(c_tok, "expected ';'");
+			continue; //act as if they just forgot the semicolon
+		}
+
+		
 
 		fetch_token();
 	}
 
-	fetch_token();
-
-	if(c_tok.type != TokenType::SEMICOLON)
-		log_token_error(c_tok, "expected ';'");
+	if(lookahead()->type == TokenType::SEMICOLON) //these gymnastics are so we can continue parsing assuming they just forgot the semicolon
+		fetch_token();
+	else
+		log_token_error(*lookahead(), "expected ';'");
+		
 
 	st->push_debug(c_tok.debug);
 
@@ -246,10 +253,12 @@ Parser::parse_function()
 		}
 	pop_scope();
 
-	fetch_token(); //consume rcurly
+	
 
-	if(c_tok.type != TokenType::SEMICOLON)
-		log_token_error(c_tok, "expected ';'");
+	if(lookahead()->type == TokenType::SEMICOLON)
+		fetch_token(); //consume rcurly
+	else
+		log_token_error(*lookahead(), "expected ';'");
  
 
 	return func;
@@ -280,6 +289,8 @@ Parser::parse_bin_expr()
 		{AIR_BinaryExpr::OperatorID::BIT_OR, 5},
 		{AIR_BinaryExpr::OperatorID::BIT_COMPL, 13},
 
+		{AIR_BinaryExpr::OperatorID::DOT, 14},
+
 		{AIR_BinaryExpr::OperatorID::UNARY_NEGATIVE, 13},
 		{AIR_BinaryExpr::OperatorID::UNARY_ADDR, 13},
 
@@ -295,7 +306,7 @@ Parser::parse_bin_expr()
 	int32_t paren_count = 0;
 	TokenCat prev_cat = TokenCat::NULLCAT;
 
-	while(c_tok.type != TokenType::COMMA && c_tok.type != TokenType::SEMICOLON)
+	while(c_tok.type != TokenType::COMMA && c_tok.type != TokenType::SEMICOLON && c_tok.type != TokenType::ASSIGN_EQUAL)
 	{
 		//messy/weird control flow -- might be better to put it into the switch/operators section....
 		if(c_tok.type == TokenType::LPAREN)
@@ -364,7 +375,9 @@ Parser::parse_bin_expr()
 						op = AIR_BinaryExpr::OperatorID::UNARY_ADDR;
 				}
 
-				while(!op_stack.empty() && precedence_map[op_stack.top()] > precedence_map[op]) //todo account for associativity
+				while(	!op_stack.empty() 
+						&& op_stack.top() != AIR_BinaryExpr::OperatorID::LPAREN 
+						&& precedence_map[op_stack.top()] > precedence_map[op]) //todo account for associativity
 				{
 					AIR_BinaryExpr::OperatorID op_other = op_stack.top();
 					op_stack.pop();
@@ -415,9 +428,13 @@ Parser::parse_bin_expr()
 							//stop on rparen?
 						);
 
-						if(c_tok.type != TokenType::COMMA)
-							log_token_error(c_tok, "expected comma!");
-						fetch_token();
+						if(c_tok.type != TokenType::COMMA && c_tok.type != TokenType::RPAREN)
+							log_token_error(c_tok, "expected ',' or ')'");
+
+						if(c_tok.type == TokenType::COMMA)
+							fetch_token();
+
+
 					}
 
 					output_stack.push(static_cast<AIR_Node*>(fcall));
@@ -464,6 +481,9 @@ Parser::parse_bin_expr()
 
 		output_stack.push(bin_expr);
 	}
+
+	if(output_stack.empty())
+		log_token_fatal(c_tok, "bad binary expression parse!");
 
 	return output_stack.top();
 }
@@ -516,6 +536,7 @@ Parser::parse_expression()
 
 		case TokenCat::Name:
 		case TokenCat::Immediate:
+		case TokenCat::Operator:
 		{
 
 			result = parse_bin_expr();
@@ -585,14 +606,45 @@ Parser::parse_statement()
 				break;
 			}
 
-			//could be a type + name
-			//if(lookahead()-> == name) && lookahead(2) == assignment
+			if(lookahead()->cat == TokenCat::Name)
+			{
+				AIR_SymbolDecl* decl = new AIR_SymbolDecl();
+				decl->push_debug(c_tok.debug);
+				decl->type = parse_type();
+				
+				decl->name = c_tok.str;
+				
+				decl->push_debug(c_tok.debug);
+				fetch_token();
 
+				if(c_tok.type == TokenType::SEMICOLON)
+				{
+					decl->value = nullptr;
+					log_token_warn(c_tok, "expected designated initializer for variable '%s'", decl->name.c_str());
+				}
+				//else if(c_tok->type == {}, initializers)
+				else if(c_tok.type == TokenType::ASSIGN_EQUAL)
+				{
+					decl->push_debug(c_tok.debug);
+					fetch_token();
+
+					decl->value = parse_expression();
+				}
+				else
+					log_token_error(c_tok, "invalid tokens after symbol declaration!");
+				
+				c_scope->add_decl(decl);
+
+				break;
+
+			}
 
 			if(lookahead()->type == TokenType::ASSIGN_EQUAL)
 			{
-				AIR_Assign* assign = new AIR_Assign;
-				assign->assignee.str = c_tok.str;
+				AIR_Assign* assign = new AIR_Assign();
+				AIR_SymbolRef* ref = new AIR_SymbolRef();
+				assign->assignee = static_cast<AIR_Node*>(ref);
+				ref->str = c_tok.str;
 				
 				assign->push_debug(c_tok.debug);
 				fetch_token(); //consume name
@@ -603,6 +655,26 @@ Parser::parse_statement()
 				assign->value = parse_expression();
 
 				c_scope->node_vec.push_back(static_cast<AIR_Node*>(assign));
+
+				break;
+			}
+
+
+			if(lookahead()->type == TokenType::DOT)
+			{
+				AIR_Assign* assign = new AIR_Assign();
+				assign->assignee = parse_bin_expr();
+
+				if(c_tok.type != TokenType::ASSIGN_EQUAL)
+					log_token_error(c_tok, "expected '='");
+
+				fetch_token();
+
+				assign->value = parse_expression();
+
+				c_scope->node_vec.push_back(static_cast<AIR_Node*>(assign));
+
+				break;
 			}	
 
 
@@ -611,9 +683,12 @@ Parser::parse_statement()
 		break;
 		case TokenCat::Keyword:
 		{
-			//if(c_tok.type == TokenType::RETURN)
+			if(c_tok.type == TokenType::RETURN)
 			{
-
+				AIR_Return* ret = new AIR_Return();
+				fetch_token(); //consume return
+				ret->return_expr = parse_expression();
+				c_scope->node_vec.push_back(static_cast<AIR_Node*>(ret));
 			}
 		}
 		break;

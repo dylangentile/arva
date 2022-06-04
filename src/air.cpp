@@ -56,8 +56,8 @@ AIR_Struct::AIR_Struct() : AIR_Node(AIR_Node_ID::Struct) {}
 AIR_Struct::~AIR_Struct() {}
 
 
-AIR_Member::AIR_Member() : AIR_Node(AIR_Node_ID::Member) {}
-AIR_Member::~AIR_Member() {}
+AIR_Return::AIR_Return() : AIR_Node(AIR_Node_ID::Return) {}
+AIR_Return::~AIR_Return() {}
 
 void
 AIR_Struct::add_field(const Field& f)
@@ -70,9 +70,9 @@ AIR_Struct::add_field(const Field& f)
 
 
 std::string
-print_air_node(const AIR_Node* n, bool print_ids)
+print_air_node(const AIR_Node* n, bool print_ids, std::string prepend)
 {
-	std::string str = "";
+	std::string str = prepend;
 
 	if(!n)
 		return "!NullNode!";
@@ -82,8 +82,14 @@ print_air_node(const AIR_Node* n, bool print_ids)
 	{
 		case AIR_Node_ID::BinaryExpr:
 		{
+			const AIR_BinaryExpr* bin_expr = static_cast<const AIR_BinaryExpr*>(n);
 			if(print_ids)
 				str += "#BinaryExpr ";
+			str += print_air_node(bin_expr->rhs, false) + " " + print_air_node(bin_expr->lhs, false) + " ";
+			str += tok_enum_to_string[(uint16_t)bin_expr->op]; 
+			//we don't need to worry about handling all of the enum, 
+			//since the unary ops are a unary expr, and the others are helpers for parsing, but dont produce valid air
+
 		}
 		break;
 		case AIR_Node_ID::SymbolDecl:
@@ -91,7 +97,7 @@ print_air_node(const AIR_Node* n, bool print_ids)
 			const AIR_SymbolDecl* decl = static_cast<const AIR_SymbolDecl*>(n);
 			if(print_ids)
 				str += "#SymbolDecl ";
-			str += decl->name + " = " + print_air_node(decl->value, print_ids);
+			str += decl->name + " = \t" + print_air_node(decl->value, print_ids);
 		}
 		break;
 		case AIR_Node_ID::SymbolRef:
@@ -100,6 +106,14 @@ print_air_node(const AIR_Node* n, bool print_ids)
 			if(print_ids)
 				str += "#SymbolRef ";
 			str += ref->str;
+		}
+		break;
+		case AIR_Node_ID::Assign:
+		{
+			const AIR_Assign* assign = static_cast<const AIR_Assign*>(n);
+			if(print_ids)
+				str += "#Assign ";
+			str += print_air_node(assign->assignee, print_ids) + " = \t" + print_air_node(assign->value, print_ids);
 		}
 		break;
 		case AIR_Node_ID::Immediate:
@@ -129,6 +143,43 @@ print_air_node(const AIR_Node* n, bool print_ids)
 			str += print_air_node(*arg, print_ids) + ")";
 		}
 		break;
+		case AIR_Node_ID::Func:
+		{
+			const AIR_Func* fn = static_cast<const AIR_Func*>(n);
+			if(print_ids)
+				str += "#Func ";
+
+			str += "(";
+
+			if(!fn->arg_vec.empty())
+			{
+				const AIR_Func::Arg* arg = fn->arg_vec.data();
+
+				for(; arg != fn->arg_vec.data() + fn->arg_vec.size() - 1; arg++)
+					str += arg->type.print() + " " + arg->name + ", ";
+				str += arg->type.print() + " " + arg->name + " ";
+			}
+
+			str += "-> "  + fn->return_type.print() + ")";
+			str += "\n" + print_air_node(fn->scope, print_ids, prepend + "\t");
+		}
+		break;
+		case AIR_Node_ID::Scope:
+		{
+			const AIR_Scope* scope = static_cast<const AIR_Scope*>(n);
+			if(print_ids)
+				str += "#Scope Start\n";
+
+			if(str == prepend)
+				str.clear();
+
+			for(const AIR_Node* node : scope->node_vec)
+				str += prepend + print_air_node(node, print_ids) + "\n";
+
+			if(print_ids)
+				str += prepend + "#Scope End\n";
+		}
+		break;
 		case AIR_Node_ID::Struct:
 		{
 			const AIR_Struct* st = static_cast<const AIR_Struct*>(n);
@@ -147,6 +198,12 @@ print_air_node(const AIR_Node* n, bool print_ids)
 			for(; f != st->field_vec.data() + st->field_vec.size() - 1; f++)
 				str += f->type.print() + " " + f->name + ", ";
 			str += f->type.print() + " " + f->name + "}";
+		}
+		break;
+		case AIR_Node_ID::Return:
+		{
+			const AIR_Return* ret = static_cast<const AIR_Return*>(n);
+			str += "return " + print_air_node(ret->return_expr, print_ids);
 		}
 		break;
 

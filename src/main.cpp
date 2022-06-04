@@ -197,10 +197,6 @@ main(int argc, const char* argv[])
 		return 1;
 	}
 
-
-
-
-
 	Error::initialize();
 
 	Parser parser;
@@ -213,7 +209,7 @@ main(int argc, const char* argv[])
 	{
 		printf("%s AIR: \n", source_file_vec[0]);
 		for(AIR_Node* n : air->node_vec)
-			printf("\t%s\n", print_air_node(n, true).c_str());
+			printf("%s\n", print_air_node(n, true).c_str());
 		printf("\n");
 	}
 

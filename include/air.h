@@ -23,7 +23,7 @@ enum class AIR_Node_ID
 	Func,
 	Scope,
 	Struct,
-	Member,
+	Return,
 
 };
 
@@ -43,9 +43,9 @@ struct AIR_Node
 
 struct AIR_BinaryExpr : public AIR_Node
 {
-	enum class OperatorID
+	enum class OperatorID : uint16_t
 	{
-		PLUS,
+		PLUS = (uint16_t)TokenType::PLUS,
 		MINUS,
 		MULTIPLY,
 		DIVIDE,
@@ -67,6 +67,8 @@ struct AIR_BinaryExpr : public AIR_Node
 		BIT_AND,
 		BIT_OR,
 		BIT_COMPL,
+
+		DOT = (uint16_t)TokenType::DOT,
 
 		
 		//these don't match w/tokentypes
@@ -92,7 +94,7 @@ struct AIR_BinaryExpr : public AIR_Node
 struct AIR_SymbolDecl : public AIR_Node
 {
 	std::string name;
-	AIR_Node* value;
+	AIR_Node* value; //this can be null. all null vars are zeroed by default
 	Type type;
 
 	AIR_SymbolDecl();
@@ -109,7 +111,7 @@ struct AIR_SymbolRef : public AIR_Node
 
 struct AIR_Assign : public AIR_Node
 {
-	AIR_SymbolRef assignee;
+	AIR_Node* assignee;
 	AIR_Node* value;
 
 
@@ -191,21 +193,19 @@ struct AIR_Struct : public AIR_Node
 
 };
 
-struct AIR_Member : public AIR_Node
+struct AIR_Return : public AIR_Node
 {
-	AIR_Node* parent; //member of this thing
-	std::string field_name;
+	AIR_Node* return_expr;
 
-
-	AIR_Member();
-	~AIR_Member();
+	AIR_Return();
+	~AIR_Return();
 };
 
 
 
 
 
-std::string print_air_node(const AIR_Node* n, bool print_ids);
+std::string print_air_node(const AIR_Node* n, bool print_ids, std::string prepend = "");
 
 
 
